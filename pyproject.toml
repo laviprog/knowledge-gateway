@@ -1,0 +1,54 @@
+[project]
+name = "rag-service"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "advanced-alchemy>=1.9.3",
+    "pydantic-settings>=2.14.1",
+    "structlog>=25.5.0",
+]
+
+[dependency-groups]
+api = [
+    "asyncpg>=0.31.0",
+    "fastapi>=0.136.1",
+    "ollama>=0.6.2",
+    "qdrant-client>=1.18.0",
+    "scalar-fastapi>=1.8.2",
+    "uvicorn[standard]>=0.47.0",
+]
+migrate = [
+    "alembic>=1.18.4",
+    "psycopg2-binary>=2.9.12",
+]
+dev = [
+    "pre-commit>=4.6.0",
+    "ruff>=0.15.12",
+    "ty>=0.0.38",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "SIM", "TCH", "RUF"]
+fixable = ["ALL"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.ty.src]
+include = ["src", "tests"]
+
+[tool.ty.terminal]
+error-on-warning = true

@@ -1,0 +1,80 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres-rag-service
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - rag-service-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.migrate
+    container_name: migrate-rag-service
+    env_file:
+      - .env
+    networks:
+      - rag-service-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: no
+
+  qdrant:
+    image: qdrant/qdrant:v1.17.1
+    container_name: qdrant-rag-service
+    ports:
+      - "127.0.0.1:6333:6333"
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+      - ./docker/qdrant/production.yaml:/qdrant/config/production.yaml:ro
+    networks:
+      - rag-service-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "timeout 5 bash -c '</dev/tcp/127.0.0.1/6333' || exit 1"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file:
+      - .env
+    networks:
+      - rag-service-network
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  rag-service-network:
+    name: rag-service-network
+    driver: bridge
