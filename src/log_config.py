@@ -119,6 +119,13 @@ class Development(Logging[structlog.dev.ConsoleRenderer]):
         return structlog.dev.ConsoleRenderer()
 
 
+def get_log(name: str | None = None) -> Logger:
+    """
+    Returns a logger configured with the given name.
+    """
+    return structlog.get_logger(name)
+
+
 def configure() -> None:
     """
     Configures logging based on the environment settings.

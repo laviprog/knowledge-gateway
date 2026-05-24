@@ -1,12 +1,34 @@
 from typing import Any
 
-from src.exceptions.schema import ErrorResponse
+from src.exceptions.schema import ErrorResponse, ValidationErrorResponse
 
-error_responses: dict[int | str, dict[str, Any]] = {
+OpenAPIResponses = dict[int | str, dict[str, Any]]
+
+bad_request_response: OpenAPIResponses = {
     400: {"model": ErrorResponse, "description": "Bad request"},
+}
+
+unauthorized_response: OpenAPIResponses = {
     401: {"model": ErrorResponse, "description": "Unauthorized"},
+}
+
+forbidden_response: OpenAPIResponses = {
     403: {"model": ErrorResponse, "description": "Forbidden"},
+}
+
+auth_responses: OpenAPIResponses = {
+    **unauthorized_response,
+    **forbidden_response,
+}
+
+not_found_response: OpenAPIResponses = {
     404: {"model": ErrorResponse, "description": "Not found"},
-    422: {"model": ErrorResponse, "description": "Validation Error"},
-    500: {"model": ErrorResponse, "description": "Internal server error"},
+}
+
+conflict_response: OpenAPIResponses = {
+    409: {"model": ErrorResponse, "description": "Conflict"},
+}
+
+validation_error_response: OpenAPIResponses = {
+    422: {"model": ValidationErrorResponse, "description": "Validation error"},
 }

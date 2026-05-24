@@ -2,7 +2,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src import log
+from src.log_config import get_log
+
+log = get_log(__name__)
 
 
 @asynccontextmanager
