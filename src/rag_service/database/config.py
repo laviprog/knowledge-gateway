@@ -3,7 +3,7 @@ from advanced_alchemy.extensions.fastapi import (
     SQLAlchemyAsyncConfig,
 )
 
-from src.config import settings
+from rag_service.config import settings
 
 session_config = AsyncSessionConfig(expire_on_commit=False)
 sqlalchemy_config = SQLAlchemyAsyncConfig(

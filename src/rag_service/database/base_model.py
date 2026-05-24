@@ -1,6 +1,6 @@
 from advanced_alchemy.base import UUIDAuditBase
 
-from src.database.mixins import SoftDeleteMixin
+from rag_service.database.mixins import SoftDeleteMixin
 
 
 class BaseModel(SoftDeleteMixin, UUIDAuditBase):

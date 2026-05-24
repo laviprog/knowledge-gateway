@@ -2,9 +2,9 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from src.exceptions.domain import AppError
-from src.log_config import get_log
-from src.utils import utc_now_iso
+from rag_service.exceptions.domain import AppError
+from rag_service.log_config import get_log
+from rag_service.utils import utc_now_iso
 
 log = get_log(__name__)
 

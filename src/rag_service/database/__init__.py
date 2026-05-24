@@ -1,4 +1,4 @@
-# TODO: from src.api_keys.models import ApiKeyModel
+# TODO: from rag_service.api_keys.models import ApiKeyModel
 
 from .base_model import BaseModel
 

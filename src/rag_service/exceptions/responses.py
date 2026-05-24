@@ -1,6 +1,6 @@
 from typing import Any
 
-from src.exceptions.schema import ErrorResponse, ValidationErrorResponse
+from rag_service.exceptions.schema import ErrorResponse, ValidationErrorResponse
 
 OpenAPIResponses = dict[int | str, dict[str, Any]]
 

@@ -3,8 +3,8 @@ import time
 import structlog
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from src.log_config import get_log
-from src.utils import generate_uuid
+from rag_service.log_config import get_log
+from rag_service.utils import generate_uuid
 
 log = get_log(__name__)
 

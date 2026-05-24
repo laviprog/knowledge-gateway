@@ -1,8 +1,10 @@
+from logging.config import fileConfig
+
 from alembic import context
-from log_config.config import fileConfig
 from sqlalchemy import engine_from_config, pool
-from src.config import settings
-from src.database import BaseModel
+
+from rag_service.config import settings
+from rag_service.database import BaseModel
 
 config = context.config
 

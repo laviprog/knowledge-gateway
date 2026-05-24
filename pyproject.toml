@@ -29,6 +29,9 @@ dev = [
     "ty>=0.0.38",
 ]
 
+[tool.uv]
+default-groups = ["api", "migrate", "dev"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

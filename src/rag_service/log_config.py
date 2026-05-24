@@ -4,7 +4,7 @@ from typing import Any, ClassVar
 
 import structlog
 
-from src.config import settings
+from rag_service.config import settings
 
 Logger = structlog.stdlib.BoundLogger
 

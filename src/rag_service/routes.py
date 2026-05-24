@@ -2,8 +2,8 @@ from fastapi import APIRouter, FastAPI, Request
 from fastapi.responses import RedirectResponse
 from scalar_fastapi import get_scalar_api_reference
 
-from src.config import settings
-from src.schema import HealthCheck
+from rag_service.config import settings
+from rag_service.schema import HealthCheck
 
 router = APIRouter(tags=["Monitoring"])
 
