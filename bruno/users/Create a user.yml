@@ -1,0 +1,21 @@
+info:
+  name: Create a user
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{API_BASE_URL}}/users"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "user"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

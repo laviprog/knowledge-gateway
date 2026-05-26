@@ -1,0 +1,9 @@
+info:
+  name: users
+  type: folder
+  seq: 1
+
+request:
+  auth:
+    type: bearer
+    token: "{{API_KEY}}"
