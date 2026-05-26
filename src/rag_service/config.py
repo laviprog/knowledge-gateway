@@ -13,12 +13,15 @@ class Settings(BaseSettings):
 
     ROOT_PATH: str = "/api/v1"  # API root path
 
+    API_KEY_PEPPER: str = "some_random_pepper_value"  # Used for hashing API keys
+    API_KEY_DEFAULT_PREFIX: str = "syn_rag"  # Default prefix for generated API keys
+
     # Database configuration
-    DB_HOST: str
-    DB_PORT: int
-    DB_NAME: str
-    DB_USER: str
-    DB_PASSWORD: str
+    POSTGRES_HOST: str
+    POSTGRES_PORT: int
+    POSTGRES_DB: str
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
 
     # Qdrant configuration
     QDRANT_URL: str
@@ -30,7 +33,10 @@ class Settings(BaseSettings):
 
     @property
     def _DB_URL_BASE(self) -> str:
-        return f"{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return (
+            f"{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:"
+            f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
 
     @property
     def DB_URL_ASYNC(self) -> str:

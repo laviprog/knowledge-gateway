@@ -3,8 +3,9 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+import rag_service.database.metadata  # noqa: F401
 from rag_service.config import settings
-from rag_service.database import BaseModel
+from rag_service.database.base_model import BaseModel
 
 config = context.config
 

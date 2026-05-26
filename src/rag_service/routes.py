@@ -4,6 +4,7 @@ from scalar_fastapi import get_scalar_api_reference
 
 from rag_service.config import settings
 from rag_service.schema import HealthCheck
+from rag_service.users.routes import router as users_router
 
 router = APIRouter(tags=["Monitoring"])
 
@@ -48,3 +49,4 @@ def routes_register(app: FastAPI) -> None:
     Registers all API routes with the FastAPI application.
     """
     app.include_router(router=router)
+    app.include_router(router=users_router)

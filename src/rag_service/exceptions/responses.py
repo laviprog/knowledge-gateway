@@ -32,3 +32,7 @@ conflict_response: OpenAPIResponses = {
 validation_error_response: OpenAPIResponses = {
     422: {"model": ValidationErrorResponse, "description": "Validation error"},
 }
+
+internal_server_error_response: OpenAPIResponses = {
+    500: {"model": ErrorResponse, "description": "Internal server error"},
+}

@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "advanced-alchemy>=1.9.3",
+    "advanced-alchemy==1.9.3",
     "pydantic-settings>=2.14.1",
     "structlog>=25.5.0",
 ]
@@ -36,7 +36,7 @@ default-groups = ["api", "migrate", "dev"]
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
-exclude = [".venv"]
+exclude = [".venv", "migrations"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC", "SIM", "TCH", "RUF"]
