@@ -6,12 +6,14 @@ repos:
         entry: uv run ruff check --fix
         language: system
         types_or: [python, pyi]
+        exclude: ^migrations/
 
       - id: ruff-format
         name: ruff format
         entry: uv run ruff format
         language: system
         types_or: [python, pyi]
+        exclude: ^migrations/
 
       - id: ty-check
         name: ty check

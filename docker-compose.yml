@@ -1,7 +1,6 @@
 services:
   postgres:
     image: postgres:15
-    container_name: postgres-rag-service
     ports:
       - "127.0.0.1:5432:5432"
     environment:
@@ -23,7 +22,6 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.migrate
-    container_name: migrate-rag-service
     env_file:
       - .env
     networks:
@@ -35,7 +33,6 @@ services:
 
   qdrant:
     image: qdrant/qdrant:v1.17.1
-    container_name: qdrant-rag-service
     ports:
       - "127.0.0.1:6333:6333"
     environment:
@@ -51,10 +48,10 @@ services:
           "CMD-SHELL",
           "timeout 5 bash -c '</dev/tcp/127.0.0.1/6333' || exit 1"
         ]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 20
-      start_period: 10s
+      retries: 10
+      start_period: 15s
     restart: unless-stopped
 
   api:

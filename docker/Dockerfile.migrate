@@ -1,10 +1,11 @@
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 WORKDIR /app
+ENV PYTHONPATH=/app/src
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --group migrate --no-install-project
+RUN uv sync --frozen --no-default-groups --group migrate --no-install-project
 
 COPY . .
 
-CMD ["uv", "run", "--no-dev", "--group", "migrate", "alembic", "upgrade", "head"]
+CMD ["uv", "run", "--no-default-groups", "--group", "migrate", "alembic", "upgrade", "head"]

@@ -1,0 +1,21 @@
+info:
+  name: Create an api-key
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{API_BASE_URL}}/users/8e71e475-6ecd-4cba-b027-1db43da57907/api-keys"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "test"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

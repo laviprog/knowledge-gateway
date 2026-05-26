@@ -2,7 +2,8 @@ version = 1
 revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
-    "python_full_version >= '3.14'",
+    "python_full_version >= '3.15'",
+    "python_full_version == '3.14.*'",
     "python_full_version == '3.13.*'",
     "python_full_version < '3.13'",
 ]
@@ -896,7 +897,7 @@ migrate = [
 
 [package.metadata]
 requires-dist = [
-    { name = "advanced-alchemy", specifier = ">=1.9.3" },
+    { name = "advanced-alchemy", specifier = "==1.9.3" },
     { name = "pydantic-settings", specifier = ">=2.14.1" },
     { name = "structlog", specifier = ">=25.5.0" },
 ]
