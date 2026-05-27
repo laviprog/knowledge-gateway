@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     API_KEY_PEPPER: str = "some_random_pepper_value"  # Used for hashing API keys
     API_KEY_DEFAULT_PREFIX: str = "syn_rag"  # Default prefix for generated API keys
 
+    BOOTSTRAP_ADMIN_NAME: str = "default_admin"
+    BOOTSTRAP_ADMIN_API_KEY_NAME: str = "admin1"
+    BOOTSTRAP_ADMIN_API_KEY: str | None = None
+
     # Database configuration
     POSTGRES_HOST: str
     POSTGRES_PORT: int

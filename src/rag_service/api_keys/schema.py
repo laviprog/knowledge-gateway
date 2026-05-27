@@ -1,14 +1,29 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from rag_service.schema import BaseSchema
+from rag_service.utils import utc_now
 
 
 class ApiKeyCreate(BaseSchema):
     name: str | None = Field(default=None, max_length=255)
     expires_at: datetime | None = None
+
+    @field_validator("expires_at")
+    @classmethod
+    def validate_expires_at(cls, expires_at: datetime | None) -> datetime | None:
+        if expires_at is None:
+            return expires_at
+
+        if expires_at.tzinfo is None or expires_at.utcoffset() is None:
+            raise ValueError("expires_at must include timezone")
+
+        if expires_at <= utc_now():
+            raise ValueError("expires_at must be in the future")
+
+        return expires_at
 
 
 class ApiKey(BaseSchema):
@@ -27,3 +42,7 @@ class ApiKey(BaseSchema):
 class ApiKeyCreated(BaseSchema):
     api_key: str
     api_key_info: ApiKey
+
+
+class ApiKeysList(BaseSchema):
+    api_keys: list[ApiKey]

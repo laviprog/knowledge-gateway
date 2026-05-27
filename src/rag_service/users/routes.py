@@ -2,16 +2,17 @@ from uuid import UUID
 
 from fastapi import APIRouter, status
 
-from rag_service.api_keys.schema import ApiKey, ApiKeyCreate, ApiKeyCreated
+from rag_service.api_keys.schema import ApiKey, ApiKeyCreate, ApiKeyCreated, ApiKeysList
 from rag_service.exceptions.responses import (
     auth_responses,
+    conflict_response,
     internal_server_error_response,
     not_found_response,
     validation_error_response,
 )
 from rag_service.security.dependencies import AdminApiKeyDep
 from rag_service.users.dependencies import UserServiceDep
-from rag_service.users.schema import User, UserCreate, UsersList
+from rag_service.users.schema import User, UserCreate, UsersList, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -81,6 +82,57 @@ async def create_user(
     return User.model_validate(user_model)
 
 
+@router.patch(
+    path="/{user_id}",
+    description="Update a user",
+    responses={
+        200: {
+            "description": "User has been updated",
+        },
+        **auth_responses,
+        **not_found_response,
+        **conflict_response,
+        **validation_error_response,
+        **internal_server_error_response,
+    },
+)
+async def update_user(
+    user_id: UUID,
+    admin_id: AdminApiKeyDep,
+    user_service: UserServiceDep,
+    user_update: UserUpdate,
+) -> User:
+    user_model = await user_service.update_user(
+        user_id=user_id,
+        current_admin_id=admin_id,
+        name=user_update.name,
+        role=user_update.role,
+    )
+    return User.model_validate(user_model)
+
+
+@router.delete(
+    path="/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    description="Delete a user",
+    responses={
+        204: {
+            "description": "User has been deleted",
+        },
+        **auth_responses,
+        **not_found_response,
+        **conflict_response,
+        **internal_server_error_response,
+    },
+)
+async def delete_user(
+    user_id: UUID,
+    admin_id: AdminApiKeyDep,
+    user_service: UserServiceDep,
+) -> None:
+    await user_service.delete_user(user_id=user_id, current_admin_id=admin_id)
+
+
 @router.post(
     path="/{user_id}/api-keys",
     status_code=status.HTTP_201_CREATED,
@@ -109,4 +161,27 @@ async def create_api_key(
     return ApiKeyCreated(
         api_key=api_key_value,
         api_key_info=ApiKey.model_validate(api_key_model),
+    )
+
+
+@router.get(
+    path="/{user_id}/api-keys",
+    description="Get a list of API keys for a user",
+    responses={
+        200: {
+            "description": "Returns a list of API keys for a user",
+        },
+        **auth_responses,
+        **not_found_response,
+        **internal_server_error_response,
+    },
+)
+async def get_api_keys(
+    user_id: UUID,
+    admin_id: AdminApiKeyDep,
+    user_service: UserServiceDep,
+) -> ApiKeysList:
+    api_key_models = await user_service.list_api_keys_for_user(user_id)
+    return ApiKeysList(
+        api_keys=[ApiKey.model_validate(api_key_model) for api_key_model in api_key_models],
     )
