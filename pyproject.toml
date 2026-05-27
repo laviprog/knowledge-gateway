@@ -25,6 +25,7 @@ migrate = [
 ]
 dev = [
     "pre-commit>=4.6.0",
+    "pytest>=9.0.3",
     "ruff>=0.15.12",
     "ty>=0.0.38",
 ]
@@ -46,6 +47,10 @@ fixable = ["ALL"]
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
 
 [tool.ty.environment]
 python-version = "3.12"
