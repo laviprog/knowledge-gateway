@@ -1,0 +1,9 @@
+info:
+  name: documents
+  type: folder
+  seq: 4
+
+request:
+  auth:
+    type: bearer
+    token: "{{API_KEY}}"

@@ -4,5 +4,9 @@ variables:
     name: API_KEY
   - name: API_BASE_URL
     value: http://127.0.0.1:8080/api/v1
-  - name: USER_ID
-    value: 8e71e475-6ecd-4cba-b027-1db43da57907
+  - secret: true
+    name: USER_ID
+  - secret: true
+    name: API_KEY_ID
+  - secret: true
+    name: DOCUMENT_ID

@@ -11,7 +11,7 @@ from rag_service.exceptions.responses import (
 )
 from rag_service.security.dependencies import AdminApiKeyDep
 
-router = APIRouter(prefix="/api_keys", tags=["API Keys"])
+router = APIRouter(prefix="/api-keys", tags=["API Keys"])
 
 
 @router.post(

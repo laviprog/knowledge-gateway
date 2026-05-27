@@ -1,0 +1,23 @@
+info:
+  name: Create a document
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{API_BASE_URL}}/documents"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "test",
+        "content": "This is a document!",
+        "source": "-"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
