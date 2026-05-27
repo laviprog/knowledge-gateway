@@ -1,0 +1,105 @@
+from uuid import UUID
+
+from fastapi import APIRouter, status
+
+from rag_service.documents.dependencies import DocumentServiceDep
+from rag_service.documents.schema import Document, DocumentCreate, DocumentsList
+from rag_service.exceptions.responses import (
+    auth_responses,
+    internal_server_error_response,
+    not_found_response,
+    validation_error_response,
+)
+from rag_service.security.dependencies import AdminApiKeyDep
+
+router = APIRouter(prefix="/documents", tags=["Documents"])
+
+
+@router.get(
+    path="",
+    description="Get documents in the global knowledge base",
+    responses={
+        200: {
+            "description": "Returns documents",
+        },
+        **auth_responses,
+        **internal_server_error_response,
+    },
+)
+async def get_documents(
+    admin_id: AdminApiKeyDep,
+    document_service: DocumentServiceDep,
+) -> DocumentsList:
+    document_models = await document_service.list_active()
+    return DocumentsList(
+        documents=[Document.model_validate(document_model) for document_model in document_models],
+    )
+
+
+@router.get(
+    path="/{document_id}",
+    description="Get a document by id",
+    responses={
+        200: {
+            "description": "Returns a document",
+        },
+        **auth_responses,
+        **not_found_response,
+        **internal_server_error_response,
+    },
+)
+async def get_document(
+    document_id: UUID,
+    admin_id: AdminApiKeyDep,
+    document_service: DocumentServiceDep,
+) -> Document:
+    document_model = await document_service.get_by_id_or_raise(document_id)
+    return Document.model_validate(document_model)
+
+
+@router.post(
+    path="",
+    status_code=status.HTTP_201_CREATED,
+    description="Create a document in the global knowledge base",
+    responses={
+        201: {
+            "description": "Document has been created",
+        },
+        **auth_responses,
+        **validation_error_response,
+        **internal_server_error_response,
+    },
+)
+async def create_document(
+    document_create: DocumentCreate,
+    admin_id: AdminApiKeyDep,
+    document_service: DocumentServiceDep,
+) -> Document:
+    document_model = await document_service.create_document(
+        title=document_create.title,
+        content=document_create.content,
+        source=document_create.source,
+        source_metadata=document_create.source_metadata,
+    )
+    return Document.model_validate(document_model)
+
+
+@router.delete(
+    path="/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    description="Delete a document from the global knowledge base",
+    responses={
+        204: {
+            "description": "Document has been deleted",
+        },
+        **auth_responses,
+        **not_found_response,
+        **internal_server_error_response,
+    },
+)
+async def delete_document(
+    document_id: UUID,
+    admin_id: AdminApiKeyDep,
+    document_service: DocumentServiceDep,
+) -> None:
+    await document_service.delete_document(document_id)

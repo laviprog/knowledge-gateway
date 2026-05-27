@@ -1,0 +1,15 @@
+info:
+  name: Delete a document
+  type: http
+  seq: 4
+
+http:
+  method: DELETE
+  url: "{{API_BASE_URL}}/documents/{{DOCUMENT_ID}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
