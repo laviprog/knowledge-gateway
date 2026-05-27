@@ -11,7 +11,7 @@ from rag_service.users.models import Role
 
 async def require_admin_key(
     api_key_service: ApiKeyServiceDep,
-    authorization: str | None = Header(...),
+    authorization: str | None = Header(default=None),
 ) -> UUID:
     api_key_model = await _verify_api_key(api_key_service, authorization)
     user = api_key_model.user
@@ -22,7 +22,7 @@ async def require_admin_key(
 
 async def require_user_key(
     api_key_service: ApiKeyServiceDep,
-    authorization: str | None = Header(...),
+    authorization: str | None = Header(default=None),
 ) -> UUID:
     api_key_model = await _verify_api_key(api_key_service, authorization)
     return api_key_model.user.id

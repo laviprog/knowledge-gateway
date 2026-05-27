@@ -32,7 +32,17 @@ def hash_api_key(api_key: str) -> str:
     ).hexdigest()
 
 
+def get_api_key_credentials(
+    api_key: str,
+    key_preview_length: int = 12,
+) -> tuple[str, str, str]:
+    return api_key, api_key[:key_preview_length], hash_api_key(api_key)
+
+
 def generate_api_key_credentials() -> tuple[str, str, str]:
+    """
+    Generate a cryptographically secure API key and API key prefix and API key hash.
+    """
     api_key, api_key_prefix = generate_raw_api_key()
     api_key_hash = hash_api_key(api_key)
     return api_key, api_key_prefix, api_key_hash

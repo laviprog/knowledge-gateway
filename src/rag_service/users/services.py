@@ -5,7 +5,7 @@ from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 
 from rag_service.api_keys.models import ApiKeyModel
 from rag_service.api_keys.services import ApiKeyService
-from rag_service.exceptions import NotFoundError
+from rag_service.exceptions import ConflictError, NotFoundError
 from rag_service.users.models import Role, UserModel
 from rag_service.users.repositories import UserRepository
 
@@ -42,7 +42,12 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
             auto_commit=True,
         )
 
-    async def create_admin_with_api_key(self, name: str) -> tuple[UserModel, str]:
+    async def create_admin_with_api_key(
+        self,
+        name: str,
+        api_key_name: str = "admin1",
+        api_key_value: str | None = None,
+    ) -> tuple[UserModel, str]:
         """
         Create an admin with an API key.
         """
@@ -56,13 +61,51 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
 
         _, api_key_value = await self.api_key_service.create_api_key(
             admin.id,
-            "admin1",
+            name=api_key_name,
+            api_key_value=api_key_value,
             auto_commit=False,
         )
 
         await self.repository.session.commit()
 
         return admin, api_key_value
+
+    async def update_user(
+        self,
+        user_id: UUID,
+        current_admin_id: UUID,
+        name: str | None = None,
+        role: Role | None = None,
+    ) -> UserModel:
+        """
+        Update an active user.
+        """
+        user = await self.get_by_id_or_raise(user_id)
+
+        if role is not None and user.id == current_admin_id and role != user.role:
+            raise ConflictError("Admins cannot change their own role")
+
+        if name is not None:
+            user.name = name
+
+        if role is not None:
+            user.role = role
+
+        return await self.repository.update(user, auto_commit=True)
+
+    async def delete_user(self, user_id: UUID, current_admin_id: UUID) -> None:
+        """
+        Soft-delete an active user and soft-delete their active API keys.
+        """
+        if user_id == current_admin_id:
+            raise ConflictError("Admins cannot delete themselves")
+
+        user = await self.get_by_id_or_raise(user_id)
+        user.soft_delete()
+
+        await self.repository.update(user, auto_commit=False)
+        await self.api_key_service.delete_api_keys_for_user(user_id, auto_commit=False)
+        await self.repository.session.commit()
 
     async def create_api_key_for_user(
         self,
@@ -84,6 +127,13 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
         )
 
         return api_key_model, api_key_value
+
+    async def list_api_keys_for_user(self, user_id: UUID) -> list[ApiKeyModel]:
+        """
+        Return API keys for an existing active user.
+        """
+        user = await self.get_by_id_or_raise(user_id)
+        return await self.api_key_service.list_for_user(user.id)
 
     async def get_by_id_or_raise(self, user_id: UUID) -> UserModel:
         user = await self.repository.get_one_or_none(
