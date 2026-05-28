@@ -25,6 +25,7 @@ def test_document_routes_are_protected() -> None:
     for method, path in [
         ("get", "/documents"),
         ("post", "/documents"),
+        ("post", "/documents/upload"),
         ("get", "/documents/{document_id}"),
         ("delete", "/documents/{document_id}"),
     ]:
@@ -32,6 +33,12 @@ def test_document_routes_are_protected() -> None:
 
         assert "401" in responses
         assert "403" in responses
+
+
+def test_document_upload_business_errors_are_documented_as_400() -> None:
+    responses = get_operation_responses("post", "/documents/upload")
+
+    assert "400" in responses
 
 
 def test_user_state_conflicts_are_documented_as_409() -> None:
