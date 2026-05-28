@@ -21,6 +21,7 @@ class Document(BaseSchema):
     content_hash: str
     source: str | None
     source_metadata: dict[str, Any]
+    chunks_count: int
     deleted_at: datetime | None
     created_at: datetime
     updated_at: datetime
