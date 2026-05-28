@@ -35,7 +35,6 @@ This command will build the Docker image and start the container.
 
 ## Development setup
 
-
 Install dependencies:
 
 ```bash

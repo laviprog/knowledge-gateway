@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     BOOTSTRAP_ADMIN_API_KEY_NAME: str = "admin1"
     BOOTSTRAP_ADMIN_API_KEY: str | None = None
 
+    DOCUMENT_UPLOAD_MAX_BYTES: int = 10 * 1024 * 1024  # Maximum allowed size 10 MB
+
     # Database configuration
     POSTGRES_HOST: str
     POSTGRES_PORT: int

@@ -1,11 +1,14 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, File, UploadFile, status
 
 from rag_service.documents.dependencies import DocumentServiceDep
+from rag_service.documents.extractors import extract_document_from_upload
 from rag_service.documents.schema import Document, DocumentCreate, DocumentsList
 from rag_service.exceptions.responses import (
     auth_responses,
+    bad_request_response,
     internal_server_error_response,
     not_found_response,
     validation_error_response,
@@ -80,6 +83,35 @@ async def create_document(
         content=document_create.content,
         source=document_create.source,
         source_metadata=document_create.source_metadata,
+    )
+    return Document.model_validate(document_model)
+
+
+@router.post(
+    path="/upload",
+    status_code=status.HTTP_201_CREATED,
+    description="Upload a file into the global knowledge base",
+    responses={
+        201: {
+            "description": "Document has been uploaded",
+        },
+        **auth_responses,
+        **bad_request_response,
+        **validation_error_response,
+        **internal_server_error_response,
+    },
+)
+async def upload_document(
+    file: Annotated[UploadFile, File(..., description="Upload file (.txt, .md, .docx, .pdf)")],
+    admin_id: AdminApiKeyDep,
+    document_service: DocumentServiceDep,
+) -> Document:
+    extracted_document = await extract_document_from_upload(file)
+    document_model = await document_service.create_document(
+        title=extracted_document.title,
+        content=extracted_document.content,
+        source=extracted_document.source,
+        source_metadata=extracted_document.source_metadata,
     )
     return Document.model_validate(document_model)
 
