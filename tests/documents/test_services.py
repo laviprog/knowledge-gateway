@@ -4,6 +4,7 @@ from uuid import uuid4
 from rag_service.documents.models import DocumentChunkModel, DocumentIndexStatus, DocumentModel
 from rag_service.documents.services import DocumentService
 from rag_service.documents.utils import hash_content, split_document_content
+from rag_service.qdrant.vector_store import VectorSearchResult
 
 
 class FakeDocumentChunkRepository:
@@ -49,7 +50,11 @@ class FakeDocumentRepository:
 
 
 class FakeEmbeddingClient:
+    def __init__(self) -> None:
+        self.texts: list[str] = []
+
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        self.texts = texts
         return [[float(index), 0.1] for index, _ in enumerate(texts)]
 
 
@@ -57,6 +62,8 @@ class FakeVectorStore:
     def __init__(self) -> None:
         self.chunks: list[DocumentChunkModel] = []
         self.embeddings: list[list[float]] = []
+        self.query_embedding: list[float] | None = None
+        self.limit: int | None = None
 
     async def upsert_chunks(
         self,
@@ -66,6 +73,23 @@ class FakeVectorStore:
         self.chunks = chunks
         self.embeddings = embeddings
         return [f"point-{index}" for index, _ in enumerate(chunks)]
+
+    async def search(
+        self,
+        query_embedding: list[float],
+        limit: int,
+    ) -> list[VectorSearchResult]:
+        self.query_embedding = query_embedding
+        self.limit = limit
+        return [
+            VectorSearchResult(
+                score=0.9,
+                document_id=str(uuid4()),
+                chunk_id=str(uuid4()),
+                chunk_index=1,
+                content="Matching content",
+            )
+        ]
 
 
 def test_hash_document_content_is_stable() -> None:
@@ -195,3 +219,17 @@ def test_index_document_updates_document_status() -> None:
     assert document.index_error is None
     assert document.indexed_at is not None
     assert chunk.qdrant_point_id == "point-0"
+
+
+def test_search_documents_embeds_query_and_searches_vector_store() -> None:
+    service = object.__new__(DocumentService)
+    service.embedding_client = FakeEmbeddingClient()
+    service.vector_store = FakeVectorStore()
+
+    results = asyncio.run(service.search_documents(query="return policy", limit=3))
+
+    assert service.embedding_client.texts == ["return policy"]
+    assert service.vector_store.query_embedding == [0.0, 0.1]
+    assert service.vector_store.limit == 3
+    assert len(results) == 1
+    assert results[0].content == "Matching content"

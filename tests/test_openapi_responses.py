@@ -11,6 +11,7 @@ def get_operation_responses(method: str, path: str) -> dict[str, Any]:
 def test_request_body_validation_is_documented_as_422() -> None:
     for method, path in [
         ("post", "/documents"),
+        ("post", "/documents/search"),
         ("post", "/users"),
         ("patch", "/users/{user_id}"),
         ("post", "/users/{user_id}/api-keys"),
@@ -25,6 +26,7 @@ def test_document_routes_are_protected() -> None:
     for method, path in [
         ("get", "/documents"),
         ("post", "/documents"),
+        ("post", "/documents/search"),
         ("post", "/documents/upload"),
         ("get", "/documents/{document_id}"),
         ("delete", "/documents/{document_id}"),

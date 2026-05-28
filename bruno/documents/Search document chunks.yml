@@ -1,0 +1,21 @@
+info:
+  name: Search document chunks
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{API_BASE_URL}}/documents/search"
+  body:
+    type: json
+    data: |-
+      {
+        "query": "smth"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
