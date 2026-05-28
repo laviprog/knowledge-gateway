@@ -34,10 +34,12 @@ class Settings(BaseSettings):
     # Qdrant configuration
     QDRANT_URL: str
     QDRANT_API_KEY: str
+    QDRANT_COLLECTION_NAME: str = "global_knowledge_base"
 
     # Ollama configuration
     OLLAMA_BASE_URL: str
-    OLLAMA_API_KEY: str
+    OLLAMA_API_KEY: str | None = None
+    OLLAMA_EMBEDDING_MODEL: str = "embeddinggemma"
 
     @property
     def _DB_URL_BASE(self) -> str:

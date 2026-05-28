@@ -7,6 +7,6 @@ variables:
   - secret: true
     name: USER_ID
   - secret: true
-    name: API_KEY_ID
-  - secret: true
     name: DOCUMENT_ID
+  - secret: true
+    name: API_KEY_ID

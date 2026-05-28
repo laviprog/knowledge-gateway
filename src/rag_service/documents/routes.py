@@ -1,11 +1,12 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, File, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, File, UploadFile, status
 
 from rag_service.documents.dependencies import DocumentServiceDep
 from rag_service.documents.extractors import extract_document_from_upload
 from rag_service.documents.schema import Document, DocumentCreate, DocumentsList
+from rag_service.documents.tasks import index_document
 from rag_service.exceptions.responses import (
     auth_responses,
     bad_request_response,
@@ -75,6 +76,7 @@ async def get_document(
 )
 async def create_document(
     document_create: DocumentCreate,
+    background_tasks: BackgroundTasks,
     admin_id: AdminApiKeyDep,
     document_service: DocumentServiceDep,
 ) -> Document:
@@ -84,6 +86,7 @@ async def create_document(
         source=document_create.source,
         source_metadata=document_create.source_metadata,
     )
+    background_tasks.add_task(index_document, document_model.id)
     return Document.model_validate(document_model)
 
 
@@ -103,6 +106,7 @@ async def create_document(
 )
 async def upload_document(
     file: Annotated[UploadFile, File(..., description="Upload file (.txt, .md, .docx, .pdf)")],
+    background_tasks: BackgroundTasks,
     admin_id: AdminApiKeyDep,
     document_service: DocumentServiceDep,
 ) -> Document:
@@ -113,6 +117,7 @@ async def upload_document(
         source=extracted_document.source,
         source_metadata=extracted_document.source_metadata,
     )
+    background_tasks.add_task(index_document, document_model.id)
     return Document.model_validate(document_model)
 
 
