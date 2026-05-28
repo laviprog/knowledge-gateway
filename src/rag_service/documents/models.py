@@ -30,6 +30,10 @@ class DocumentModel(BaseModel):
         lazy="selectin",
     )
 
+    @property
+    def chunks_count(self) -> int:
+        return len([chunk for chunk in self.chunks if not chunk.is_deleted])
+
 
 class DocumentChunkModel(BaseModel):
     """

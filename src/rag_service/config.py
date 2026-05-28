@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     BOOTSTRAP_ADMIN_API_KEY: str | None = None
 
     DOCUMENT_UPLOAD_MAX_BYTES: int = 10 * 1024 * 1024  # Maximum allowed size 10 MB
+    DOCUMENT_CHUNK_MAX_CHARS: int = 4000
+    DOCUMENT_CHUNK_OVERLAP_CHARS: int = 400
 
     # Database configuration
     POSTGRES_HOST: str

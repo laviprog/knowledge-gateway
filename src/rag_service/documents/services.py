@@ -3,9 +3,10 @@ from uuid import UUID
 
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 
+from rag_service.config import settings
 from rag_service.documents.models import DocumentChunkModel, DocumentModel
 from rag_service.documents.repositories import DocumentChunkRepository, DocumentRepository
-from rag_service.documents.utils import hash_content
+from rag_service.documents.utils import hash_content, split_document_content
 from rag_service.exceptions import NotFoundError
 
 
@@ -35,7 +36,7 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
         """
         Create a document in the global knowledge base.
         """
-        return await self.repository.add(
+        document = await self.repository.add(
             DocumentModel(
                 title=title,
                 content=content,
@@ -43,8 +44,40 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
                 source=source,
                 source_metadata=source_metadata or {},
             ),
-            auto_commit=True,
+            auto_commit=False,
         )
+        await self.repository.session.flush()
+
+        await self.create_chunks_for_document(document)
+        await self.repository.session.commit()
+
+        return document
+
+    async def create_chunks_for_document(self, document: DocumentModel) -> list[DocumentChunkModel]:
+        """
+        Create chunks for a document.
+        """
+        chunk_contents = split_document_content(
+            document.content,
+            max_chars=settings.DOCUMENT_CHUNK_MAX_CHARS,
+            overlap_chars=settings.DOCUMENT_CHUNK_OVERLAP_CHARS,
+        )
+
+        chunks: list[DocumentChunkModel] = []
+        for index, chunk_content in enumerate(chunk_contents):
+            chunk = await self.chunk_repository.add(
+                DocumentChunkModel(
+                    document_id=document.id,
+                    chunk_index=index,
+                    content=chunk_content,
+                    content_hash=hash_content(chunk_content),
+                ),
+                auto_commit=False,
+            )
+            chunks.append(chunk)
+
+        document.chunks = chunks
+        return chunks
 
     async def delete_document(self, document_id: UUID) -> None:
         """
