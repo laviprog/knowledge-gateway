@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from qdrant_client import AsyncQdrantClient
@@ -6,22 +5,10 @@ from qdrant_client.models import Distance, PointIdsList, PointStruct, VectorPara
 
 from rag_service.config import settings
 from rag_service.documents.models import DocumentChunkModel
+from rag_service.qdrant.schema import VectorSearchResult
 
 if TYPE_CHECKING:
     from uuid import UUID
-
-
-@dataclass(frozen=True)
-class VectorSearchResult:
-    """
-    Vector search result.
-    """
-
-    score: float
-    document_id: str
-    chunk_id: str
-    chunk_index: int
-    content: str
 
 
 class QdrantVectorStore:

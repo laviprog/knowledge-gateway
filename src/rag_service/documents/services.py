@@ -9,7 +9,8 @@ from rag_service.documents.repositories import DocumentChunkRepository, Document
 from rag_service.documents.utils import hash_content, split_document_content
 from rag_service.exceptions import NotFoundError
 from rag_service.ollama.embeddings import OllamaEmbeddingClient
-from rag_service.qdrant.vector_store import QdrantVectorStore, VectorSearchResult
+from rag_service.qdrant.schema import VectorSearchResult
+from rag_service.qdrant.vector_store import QdrantVectorStore
 from rag_service.utils import utc_now
 
 
