@@ -29,5 +29,6 @@ class OllamaEmbeddingClient:
         response = await self.client.embed(
             model=self.model,
             input=texts,
+            keep_alive="30m",
         )
         return [list(embedding) for embedding in response.embeddings]

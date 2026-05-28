@@ -9,6 +9,7 @@ from rag_service.documents.repositories import DocumentChunkRepository, Document
 from rag_service.documents.utils import hash_content, split_document_content
 from rag_service.exceptions import NotFoundError
 from rag_service.ollama.embeddings import OllamaEmbeddingClient
+from rag_service.qdrant.schema import VectorSearchResult
 from rag_service.qdrant.vector_store import QdrantVectorStore
 from rag_service.utils import utc_now
 
@@ -125,6 +126,18 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
             document.indexed_at = None
             await self.repository.update(document, auto_commit=True)
             raise
+
+    async def search_documents(self, query: str, limit: int) -> list[VectorSearchResult]:
+        """
+        Search indexed document chunks.
+        """
+        embeddings = await self.embedding_client.embed_texts([query])
+        search_results = await self.vector_store.search(
+            query_embedding=embeddings[0],
+            limit=limit,
+        )
+
+        return search_results
 
     async def delete_document(self, document_id: UUID) -> None:
         """

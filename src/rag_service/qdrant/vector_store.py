@@ -5,6 +5,7 @@ from qdrant_client.models import Distance, PointIdsList, PointStruct, VectorPara
 
 from rag_service.config import settings
 from rag_service.documents.models import DocumentChunkModel
+from rag_service.qdrant.schema import VectorSearchResult
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -91,3 +92,38 @@ class QdrantVectorStore:
             points_selector=PointIdsList(points=points),
             wait=True,
         )
+
+    async def search(
+        self,
+        query_embedding: list[float],
+        limit: int,
+    ) -> list[VectorSearchResult]:
+        """
+        Search chunks by query embedding.
+        """
+        collection_exists = await self.client.collection_exists(self.collection_name)
+        if not collection_exists:
+            return []
+
+        response = await self.client.query_points(
+            collection_name=self.collection_name,
+            query=query_embedding,
+            limit=limit,
+            with_payload=True,
+            with_vectors=False,
+        )
+
+        results: list[VectorSearchResult] = []
+        for point in response.points:
+            payload = point.payload or {}
+            results.append(
+                VectorSearchResult(
+                    score=point.score,
+                    document_id=str(payload["document_id"]),
+                    chunk_id=str(payload["chunk_id"]),
+                    chunk_index=int(payload["chunk_index"]),
+                    content=str(payload["content"]),
+                )
+            )
+
+        return results

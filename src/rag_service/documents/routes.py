@@ -5,7 +5,14 @@ from fastapi import APIRouter, BackgroundTasks, File, UploadFile, status
 
 from rag_service.documents.dependencies import DocumentServiceDep
 from rag_service.documents.extractors import extract_document_from_upload
-from rag_service.documents.schema import Document, DocumentCreate, DocumentsList
+from rag_service.documents.schema import (
+    Document,
+    DocumentCreate,
+    DocumentSearchQuery,
+    DocumentSearchResult,
+    DocumentSearchResults,
+    DocumentsList,
+)
 from rag_service.documents.tasks import index_document
 from rag_service.exceptions.responses import (
     auth_responses,
@@ -88,6 +95,41 @@ async def create_document(
     )
     background_tasks.add_task(index_document, document_model.id)
     return Document.model_validate(document_model)
+
+
+@router.post(
+    path="/search",
+    description="Search document chunks in the global knowledge base",
+    responses={
+        200: {
+            "description": "Returns matching document chunks",
+        },
+        **auth_responses,
+        **validation_error_response,
+        **internal_server_error_response,
+    },
+)
+async def search_documents(
+    search_query: DocumentSearchQuery,
+    admin_id: AdminApiKeyDep,
+    document_service: DocumentServiceDep,
+) -> DocumentSearchResults:
+    search_results = await document_service.search_documents(
+        query=search_query.query,
+        limit=search_query.limit,
+    )
+    return DocumentSearchResults(
+        results=[
+            DocumentSearchResult(
+                score=result.score,
+                document_id=UUID(result.document_id),
+                chunk_id=UUID(result.chunk_id),
+                chunk_index=result.chunk_index,
+                content=result.content,
+            )
+            for result in search_results
+        ],
+    )
 
 
 @router.post(

@@ -33,3 +33,20 @@ class Document(BaseSchema):
 
 class DocumentsList(BaseSchema):
     documents: list[Document]
+
+
+class DocumentSearchQuery(BaseSchema):
+    query: str = Field(min_length=1)
+    limit: int = Field(default=5, ge=1, le=20)
+
+
+class DocumentSearchResult(BaseSchema):
+    score: float
+    document_id: UUID
+    chunk_id: UUID
+    chunk_index: int
+    content: str
+
+
+class DocumentSearchResults(BaseSchema):
+    results: list[DocumentSearchResult]
