@@ -1,14 +1,27 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import Enum, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from rag_service.database.base_model import BaseModel
+from rag_service.enums import BaseEnum
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+
+class DocumentIndexStatus(BaseEnum):
+    """
+    Document indexing status.
+    """
+
+    PENDING = "pending"
+    INDEXING = "indexing"
+    INDEXED = "indexed"
+    FAILED = "failed"
 
 
 class DocumentModel(BaseModel):
@@ -23,6 +36,12 @@ class DocumentModel(BaseModel):
     content_hash: Mapped[str] = mapped_column(String(64), index=True)
     source: Mapped[str | None] = mapped_column(String(512))
     source_metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    index_status: Mapped[DocumentIndexStatus] = mapped_column(
+        Enum(DocumentIndexStatus),
+        default=DocumentIndexStatus.PENDING,
+    )
+    index_error: Mapped[str | None] = mapped_column(Text)
+    indexed_at: Mapped[datetime | None]
 
     chunks: Mapped[list["DocumentChunkModel"]] = relationship(
         "DocumentChunkModel",

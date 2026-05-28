@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import Field
 
+from rag_service.documents.models import DocumentIndexStatus
 from rag_service.schema import BaseSchema
 
 
@@ -22,6 +23,9 @@ class Document(BaseSchema):
     source: str | None
     source_metadata: dict[str, Any]
     chunks_count: int
+    index_status: DocumentIndexStatus
+    index_error: str | None
+    indexed_at: datetime | None
     deleted_at: datetime | None
     created_at: datetime
     updated_at: datetime
