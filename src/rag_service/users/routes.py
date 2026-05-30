@@ -13,8 +13,9 @@ from rag_service.exceptions.responses import (
 from rag_service.security.dependencies import AdminApiKeyDep
 from rag_service.users.dependencies import UserServiceDep
 from rag_service.users.schema import User, UserCreate, UsersList, UserUpdate
+from rag_service.utils import is_dev_env
 
-router = APIRouter(prefix="/users", tags=["Users"])
+router = APIRouter(prefix="/users", tags=["Users"], include_in_schema=is_dev_env())
 
 
 @router.get(

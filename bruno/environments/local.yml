@@ -10,3 +10,5 @@ variables:
     name: DOCUMENT_ID
   - secret: true
     name: API_KEY_ID
+  - secret: true
+    name: LLM_MODEL_ID

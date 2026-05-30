@@ -5,6 +5,7 @@ from typing import Any, ClassVar
 import structlog
 
 from rag_service.config import settings
+from rag_service.utils import is_dev_env
 
 Logger = structlog.stdlib.BoundLogger
 
@@ -130,7 +131,7 @@ def configure() -> None:
     """
     Configures logging based on the environment settings.
     """
-    if settings.ENV == "prod":
+    if not is_dev_env():
         Production.configure()
     else:
         Development.configure()
