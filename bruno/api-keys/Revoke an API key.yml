@@ -1,0 +1,15 @@
+info:
+  name: Revoke an API key
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{API_BASE_URL}}/api-keys/{{API_KEY_ID}}/revoke"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

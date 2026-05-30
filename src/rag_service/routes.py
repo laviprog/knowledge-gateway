@@ -2,11 +2,16 @@ from fastapi import APIRouter, FastAPI, Request
 from fastapi.responses import RedirectResponse
 from scalar_fastapi import get_scalar_api_reference
 
+from rag_service.api_keys.routes import router as api_keys_router
 from rag_service.config import settings
+from rag_service.documents.routes import router as documents_router
+from rag_service.llm_models.routes import openai_router
+from rag_service.llm_models.routes import router as llm_models_router
 from rag_service.schema import HealthCheck
 from rag_service.users.routes import router as users_router
+from rag_service.utils import is_dev_env
 
-router = APIRouter(tags=["Monitoring"])
+router = APIRouter(tags=["Monitoring"], include_in_schema=is_dev_env())
 
 
 @router.get(
@@ -50,3 +55,7 @@ def routes_register(app: FastAPI) -> None:
     """
     app.include_router(router=router)
     app.include_router(router=users_router)
+    app.include_router(router=api_keys_router)
+    app.include_router(router=documents_router)
+    app.include_router(router=llm_models_router)
+    app.include_router(router=openai_router)

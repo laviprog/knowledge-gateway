@@ -1,0 +1,15 @@
+info:
+  name: Delete an LLM model
+  type: http
+  seq: 6
+
+http:
+  method: DELETE
+  url: "{{API_BASE_URL}}/llm-models/{{LLM_MODEL_ID}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

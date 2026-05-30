@@ -1,0 +1,21 @@
+info:
+  name: Upload a file
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{API_BASE_URL}}/documents/upload"
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        type: text
+        value: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     API_KEY_PEPPER: str = "some_random_pepper_value"  # Used for hashing API keys
     API_KEY_DEFAULT_PREFIX: str = "syn_rag"  # Default prefix for generated API keys
 
+    BOOTSTRAP_ADMIN_NAME: str = "default_admin"
+    BOOTSTRAP_ADMIN_API_KEY_NAME: str = "admin1"
+    BOOTSTRAP_ADMIN_API_KEY: str | None = None
+
+    DOCUMENT_UPLOAD_MAX_BYTES: int = 10 * 1024 * 1024  # Maximum allowed size 10 MB
+    DOCUMENT_CHUNK_MAX_CHARS: int = 4000
+    DOCUMENT_CHUNK_OVERLAP_CHARS: int = 400
+
     # Database configuration
     POSTGRES_HOST: str
     POSTGRES_PORT: int
@@ -26,10 +34,12 @@ class Settings(BaseSettings):
     # Qdrant configuration
     QDRANT_URL: str
     QDRANT_API_KEY: str
+    QDRANT_COLLECTION_NAME: str = "global_knowledge_base"
 
     # Ollama configuration
     OLLAMA_BASE_URL: str
-    OLLAMA_API_KEY: str
+    OLLAMA_API_KEY: str | None = None
+    OLLAMA_EMBEDDING_MODEL: str = "embeddinggemma"
 
     @property
     def _DB_URL_BASE(self) -> str:

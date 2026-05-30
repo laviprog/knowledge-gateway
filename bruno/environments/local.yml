@@ -4,3 +4,11 @@ variables:
     name: API_KEY
   - name: API_BASE_URL
     value: http://127.0.0.1:8080/api/v1
+  - secret: true
+    name: USER_ID
+  - secret: true
+    name: DOCUMENT_ID
+  - secret: true
+    name: API_KEY_ID
+  - secret: true
+    name: LLM_MODEL_ID

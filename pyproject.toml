@@ -14,7 +14,9 @@ dependencies = [
 api = [
     "asyncpg>=0.31.0",
     "fastapi>=0.136.1",
+    "markitdown[docx,pdf]>=0.1.6",
     "ollama>=0.6.2",
+    "python-multipart>=0.0.29",
     "qdrant-client>=1.18.0",
     "scalar-fastapi>=1.8.2",
     "uvicorn[standard]>=0.47.0",
@@ -25,6 +27,7 @@ migrate = [
 ]
 dev = [
     "pre-commit>=4.6.0",
+    "pytest>=9.0.3",
     "ruff>=0.15.12",
     "ty>=0.0.38",
 ]
@@ -46,6 +49,10 @@ fixable = ["ALL"]
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
 
 [tool.ty.environment]
 python-version = "3.12"
