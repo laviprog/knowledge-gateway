@@ -10,8 +10,9 @@ from rag_service.exceptions.responses import (
     not_found_response,
 )
 from rag_service.security.dependencies import AdminApiKeyDep
+from rag_service.utils import is_dev_env
 
-router = APIRouter(prefix="/api-keys", tags=["API Keys"])
+router = APIRouter(prefix="/api-keys", tags=["API Keys"], include_in_schema=is_dev_env())
 
 
 @router.post(

@@ -1,0 +1,15 @@
+info:
+  name: Get an LLM model by id
+  type: http
+  seq: 3
+
+http:
+  method: GET
+  url: "{{API_BASE_URL}}/llm-models/{{LLM_MODEL_ID}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

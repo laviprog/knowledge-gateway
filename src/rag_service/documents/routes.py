@@ -22,8 +22,9 @@ from rag_service.exceptions.responses import (
     validation_error_response,
 )
 from rag_service.security.dependencies import AdminApiKeyDep
+from rag_service.utils import is_dev_env
 
-router = APIRouter(prefix="/documents", tags=["Documents"])
+router = APIRouter(prefix="/documents", tags=["Documents"], include_in_schema=is_dev_env())
 
 
 @router.get(

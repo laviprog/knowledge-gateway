@@ -1,6 +1,15 @@
 import uuid
 from datetime import UTC, datetime
 
+from rag_service.config import settings
+
+
+def is_dev_env() -> bool:
+    """
+    Check if the current environment is development.
+    """
+    return settings.ENV == "dev"
+
 
 def generate_uuid() -> str:
     """

@@ -1,0 +1,25 @@
+info:
+  name: Create an LLM model
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{API_BASE_URL}}/llm-models"
+  body:
+    type: json
+    data: |-
+      {
+        "public_id": "asistent_1",
+        "provider": "ollama",
+        "provider_model": "qwen3.6:27b",
+        "context_window_tokens": 256000,
+        "max_completion_tokens": 8192
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
