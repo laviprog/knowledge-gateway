@@ -7,6 +7,7 @@
 [![Linting](https://github.com/laviprog/rag-service/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/laviprog/rag-service/actions/workflows/lint.yml)
 [![Type Checking](https://github.com/laviprog/rag-service/actions/workflows/typecheck.yml/badge.svg?branch=main)](https://github.com/laviprog/rag-service/actions/workflows/typecheck.yml)
 
+![License](https://img.shields.io/badge/License-MIT-green)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.130+-009688?logo=fastapi&logoColor=white)
 ![ty](https://custom-icon-badges.demolab.com/badge/ty-261230.svg?logo=ty-astral-logo)
@@ -14,7 +15,6 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white)
 ![Qdrant](https://img.shields.io/badge/Qdrant-latest-FF4500?logo=qdrant&logoColor=white)
 ![Ollama](https://img.shields.io/badge/Ollama-latest-000000?logo=ollama&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
 
 ## Table of Contents
 
