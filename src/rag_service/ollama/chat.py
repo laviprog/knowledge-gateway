@@ -2,8 +2,16 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Any, Literal
 
+import httpx
+
 from rag_service.config import settings
 from rag_service.ollama.client import get_ollama_client
+
+
+class OllamaTimeoutError(Exception):
+    """
+    Raised when Ollama does not respond in time.
+    """
 
 
 @dataclass(frozen=True)
@@ -49,20 +57,23 @@ class OllamaChatClient:
         if max_completion_tokens is not None:
             options["num_predict"] = max_completion_tokens
 
-        response = await self.client.chat(
-            model=model,
-            messages=messages,
-            stream=True,
-            options=options or None,
-            keep_alive=settings.OLLAMA_KEEP_ALIVE,
-            think=think,
-        )
-
-        async for chunk in response:
-            yield OllamaChatChunk(
-                content=chunk.message.content or "",
-                done=bool(chunk.done),
-                finish_reason=chunk.done_reason,
-                prompt_tokens=chunk.prompt_eval_count,
-                completion_tokens=chunk.eval_count,
+        try:
+            response = await self.client.chat(
+                model=model,
+                messages=messages,
+                stream=True,
+                options=options or None,
+                keep_alive=settings.OLLAMA_KEEP_ALIVE,
+                think=think,
             )
+
+            async for chunk in response:
+                yield OllamaChatChunk(
+                    content=chunk.message.content or "",
+                    done=bool(chunk.done),
+                    finish_reason=chunk.done_reason,
+                    prompt_tokens=chunk.prompt_eval_count,
+                    completion_tokens=chunk.eval_count,
+                )
+        except httpx.TimeoutException as exc:
+            raise OllamaTimeoutError("Ollama request timed out") from exc

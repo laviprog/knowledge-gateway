@@ -3,14 +3,14 @@ from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, cast
 
 from rag_service.chats.schema import ChatCompletionRequest
-from rag_service.chats.services import ChatCompletionService
+from rag_service.chats.services import ChatCompletionService, ChatCompletionTimeoutError
 from rag_service.config import settings
 from rag_service.documents.services import (
     DocumentSearchTimings,
     DocumentSearchWithMetrics,
 )
 from rag_service.llm_models.models import LlmModel
-from rag_service.ollama.chat import OllamaChatChunk
+from rag_service.ollama.chat import OllamaChatChunk, OllamaTimeoutError
 from rag_service.qdrant.schema import VectorSearchResult
 
 if TYPE_CHECKING:
@@ -95,6 +95,26 @@ class FakeOllamaChatClient:
         )
 
 
+class FakeTimeoutOllamaChatClient:
+    async def stream_chat(
+        self,
+        model: str,
+        messages: list[dict[str, str]],
+        temperature: float | None = None,
+        top_p: float | None = None,
+        max_completion_tokens: int | None = None,
+        think: bool | str | None = False,
+    ) -> AsyncIterator[OllamaChatChunk]:
+        raise OllamaTimeoutError("Ollama request timed out")
+        yield OllamaChatChunk(
+            content="",
+            done=True,
+            finish_reason="stop",
+            prompt_tokens=None,
+            completion_tokens=None,
+        )
+
+
 def test_prepare_completion_builds_retrieval_and_prompt() -> None:
     document_service = FakeDocumentService()
     chat_client = FakeOllamaChatClient()
@@ -173,3 +193,52 @@ def test_complete_returns_non_stream_response() -> None:
     assert response.choices[0].message.content == "Hello!"
     assert response.usage is not None
     assert response.usage.total_tokens == 12
+
+
+def test_stream_completion_returns_error_event_on_ollama_timeout() -> None:
+    service = ChatCompletionService(
+        document_service=cast("DocumentService", FakeDocumentService()),
+        llm_model_service=cast("LlmModelService", FakeLlmModelService()),
+        chat_client=cast("OllamaChatClient", FakeTimeoutOllamaChatClient()),
+    )
+    request = ChatCompletionRequest.model_validate(
+        {
+            "model": "rag-assistant-lite",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "stream": True,
+        }
+    )
+
+    async def collect_events() -> list[str]:
+        plan = await service.prepare_completion(request)
+        return [event async for event in service.stream_completion(plan)]
+
+    events = asyncio.run(collect_events())
+
+    assert any('"code": "ollama_timeout"' in event for event in events)
+    assert events[-1] == "data: [DONE]\n\n"
+
+
+def test_complete_raises_controlled_error_on_ollama_timeout() -> None:
+    service = ChatCompletionService(
+        document_service=cast("DocumentService", FakeDocumentService()),
+        llm_model_service=cast("LlmModelService", FakeLlmModelService()),
+        chat_client=cast("OllamaChatClient", FakeTimeoutOllamaChatClient()),
+    )
+    request = ChatCompletionRequest.model_validate(
+        {
+            "model": "rag-assistant-lite",
+            "messages": [{"role": "user", "content": "Hello"}],
+        }
+    )
+
+    async def complete_request() -> None:
+        plan = await service.prepare_completion(request)
+        await service.complete(plan)
+
+    try:
+        asyncio.run(complete_request())
+    except ChatCompletionTimeoutError as exc:
+        assert str(exc) == "Ollama request timed out"
+    else:
+        raise AssertionError("Expected ChatCompletionTimeoutError")

@@ -17,7 +17,7 @@ from .schema import (
     OpenAIError,
     OpenAIErrorResponse,
 )
-from .services import ChatCompletionService
+from .services import ChatCompletionService, ChatCompletionTimeoutError
 
 router = APIRouter(tags=["Chat Completions"])
 
@@ -33,6 +33,7 @@ router = APIRouter(tags=["Chat Completions"])
         **auth_responses,
         400: {"model": OpenAIErrorResponse, "description": "Invalid request"},
         404: {"model": OpenAIErrorResponse, "description": "Model not found"},
+        503: {"model": OpenAIErrorResponse, "description": "LLM provider timeout"},
         **validation_error_response,
         **internal_server_error_response,
     },
@@ -71,7 +72,15 @@ async def create_chat_completion(
             media_type="text/event-stream",
         )
 
-    return await service.complete(plan)
+    try:
+        return await service.complete(plan)
+    except ChatCompletionTimeoutError as exc:
+        return openai_error_response(
+            status_code=503,
+            message=str(exc),
+            error_type="server_error",
+            code="ollama_timeout",
+        )
 
 
 def openai_error_response(

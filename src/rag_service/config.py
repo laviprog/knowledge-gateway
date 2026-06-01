@@ -21,8 +21,8 @@ class Settings(BaseSettings):
     BOOTSTRAP_ADMIN_API_KEY: str | None = None
 
     DOCUMENT_UPLOAD_MAX_BYTES: int = 10 * 1024 * 1024  # Maximum allowed size 10 MB
-    DOCUMENT_CHUNK_MAX_CHARS: int = 4000
-    DOCUMENT_CHUNK_OVERLAP_CHARS: int = 400
+    DOCUMENT_CHUNK_MAX_CHARS: int = 2500
+    DOCUMENT_CHUNK_OVERLAP_CHARS: int = 250
     RAG_RETRIEVAL_LIMIT: int = 10
     RAG_CONTEXT_MAX_CHARS: int = 12000
 
@@ -42,8 +42,8 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str
     OLLAMA_API_KEY: str | None = None
     OLLAMA_EMBEDDING_MODEL: str = "embeddinggemma"
-    OLLAMA_TIMEOUT_SECONDS: float = 10
-    OLLAMA_KEEP_ALIVE: str = "-1"
+    OLLAMA_TIMEOUT_SECONDS: float = 30
+    OLLAMA_KEEP_ALIVE: str = "24h"
 
     @property
     def _DB_URL_BASE(self) -> str:

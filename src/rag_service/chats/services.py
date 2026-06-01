@@ -7,7 +7,7 @@ from rag_service.documents.services import DocumentSearchWithMetrics, DocumentSe
 from rag_service.llm_models.models import LlmModel
 from rag_service.llm_models.services import LlmModelService
 from rag_service.log_config import get_log
-from rag_service.ollama.chat import OllamaChatChunk, OllamaChatClient
+from rag_service.ollama.chat import OllamaChatChunk, OllamaChatClient, OllamaTimeoutError
 from rag_service.utils import generate_uuid
 
 from .prompts import build_rag_messages, get_latest_user_message
@@ -21,6 +21,12 @@ from .schema import (
 from .sse import build_chunk, build_usage_chunk, format_sse_event
 
 log = get_log(__name__)
+
+
+class ChatCompletionTimeoutError(Exception):
+    """
+    Raised when chat completion generation times out.
+    """
 
 
 @dataclass(frozen=True)
@@ -172,6 +178,18 @@ class ChatCompletionService:
                 generation_start=generation_start,
                 first_token_ms=first_token_ms,
             )
+        except OllamaTimeoutError:
+            self.log_timeout(plan=plan)
+            yield format_sse_event(
+                {
+                    "error": {
+                        "message": "Ollama request timed out",
+                        "type": "server_error",
+                        "code": "ollama_timeout",
+                    }
+                }
+            )
+            yield format_sse_event("[DONE]")
         except Exception:
             log.exception(
                 "Chat completion failed",
@@ -206,6 +224,9 @@ class ChatCompletionService:
                     first_token_ms = round((time.perf_counter() - generation_start) * 1000, 2)
 
                 content_parts.append(chunk.content)
+        except OllamaTimeoutError as exc:
+            self.log_timeout(plan=plan)
+            raise ChatCompletionTimeoutError("Ollama request timed out") from exc
         except Exception:
             log.exception(
                 "Chat completion failed",
@@ -280,5 +301,21 @@ class ChatCompletionService:
             retrieval_total_ms=plan.retrieval.timings.total_ms,
             ollama_ttfb_ms=first_token_ms,
             ollama_generation_ms=round((time.perf_counter() - generation_start) * 1000, 2),
+            total_ms=round((time.perf_counter() - plan.started_at) * 1000, 2),
+        )
+
+    def log_timeout(self, plan: ChatCompletionPlan) -> None:
+        """
+        Log chat completion timeout without traceback.
+        """
+        log.warning(
+            "Chat completion timed out",
+            model=plan.request.model,
+            provider_model=plan.llm_model.provider_model,
+            timeout_seconds=settings.OLLAMA_TIMEOUT_SECONDS,
+            chunks_count=len(plan.retrieval.results),
+            ollama_embedding_ms=plan.retrieval.timings.ollama_embedding_ms,
+            qdrant_search_ms=plan.retrieval.timings.qdrant_search_ms,
+            retrieval_total_ms=plan.retrieval.timings.total_ms,
             total_ms=round((time.perf_counter() - plan.started_at) * 1000, 2),
         )
