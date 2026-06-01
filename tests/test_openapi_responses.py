@@ -61,6 +61,7 @@ def test_llm_model_routes_are_protected() -> None:
         ("patch", "/llm-models/{model_id}"),
         ("delete", "/llm-models/{model_id}"),
         ("get", "/models"),
+        ("get", "/chat-completion-requests"),
     ]:
         responses = get_optional_operation_responses(method, path)
         if responses is None:

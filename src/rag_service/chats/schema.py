@@ -1,7 +1,10 @@
+from datetime import datetime
 from typing import Any, ClassVar, Literal
+from uuid import UUID
 
 from pydantic import ConfigDict, Field
 
+from rag_service.chats.models import ChatCompletionRequestStatus
 from rag_service.schema import BaseSchema
 
 ChatRole = Literal["system", "user", "assistant", "tool"]
@@ -67,6 +70,43 @@ class OpenAIError(BaseSchema):
 
 class OpenAIErrorResponse(BaseSchema):
     error: OpenAIError
+
+
+class ChatCompletionRequestLog(BaseSchema):
+    id: UUID
+    api_key_id: UUID
+    user_id: UUID
+    model_id: UUID | None
+    model_public_id: str
+    provider: str | None
+    provider_model: str | None
+    request_id: str
+    completion_id: str | None
+    stream: bool
+    status: ChatCompletionRequestStatus
+    error_code: str | None
+    error_message: str | None
+    prompt_tokens: int | None
+    completion_tokens: int | None
+    total_tokens: int | None
+    chunks_count: int | None
+    retrieval_total_ms: float | None
+    ollama_embedding_ms: float | None
+    qdrant_search_ms: float | None
+    ollama_ttfb_ms: float | None
+    ollama_generation_ms: float | None
+    total_ms: float | None
+    messages_count: int | None
+    query_length: int | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ChatCompletionRequestLogsList(BaseSchema):
+    requests: list[ChatCompletionRequestLog]
+    total: int
+    limit: int
+    offset: int
 
 
 OpenAIChunk = dict[str, Any]

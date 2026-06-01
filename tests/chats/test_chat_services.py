@@ -187,12 +187,15 @@ def test_complete_returns_non_stream_response() -> None:
         plan = await service.prepare_completion(request)
         return await service.complete(plan)
 
-    response = asyncio.run(complete_request())
+    result = asyncio.run(complete_request())
 
-    assert response.object == "chat.completion"
-    assert response.choices[0].message.content == "Hello!"
-    assert response.usage is not None
-    assert response.usage.total_tokens == 12
+    assert result.response.object == "chat.completion"
+    assert result.response.choices[0].message.content == "Hello!"
+    assert result.response.usage is not None
+    assert result.response.usage.total_tokens == 12
+    assert result.metrics.prompt_tokens == 10
+    assert result.metrics.completion_tokens == 2
+    assert result.metrics.total_tokens == 12
 
 
 def test_stream_completion_returns_error_event_on_ollama_timeout() -> None:
@@ -217,6 +220,38 @@ def test_stream_completion_returns_error_event_on_ollama_timeout() -> None:
 
     assert any('"code": "ollama_timeout"' in event for event in events)
     assert events[-1] == "data: [DONE]\n\n"
+
+
+def test_stream_completion_calls_completion_callback_with_metrics() -> None:
+    chat_client = FakeOllamaChatClient()
+    service = ChatCompletionService(
+        document_service=cast("DocumentService", FakeDocumentService()),
+        llm_model_service=cast("LlmModelService", FakeLlmModelService()),
+        chat_client=cast("OllamaChatClient", chat_client),
+    )
+    request = ChatCompletionRequest.model_validate(
+        {
+            "model": "rag-assistant-lite",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "stream": True,
+        }
+    )
+    callback_metrics = []
+
+    async def collect_events() -> list[str]:
+        plan = await service.prepare_completion(request)
+
+        async def on_complete(metrics) -> None:
+            callback_metrics.append(metrics)
+
+        return [event async for event in service.stream_completion(plan, on_complete=on_complete)]
+
+    asyncio.run(collect_events())
+
+    assert len(callback_metrics) == 1
+    assert callback_metrics[0].prompt_tokens == 10
+    assert callback_metrics[0].completion_tokens == 2
+    assert callback_metrics[0].total_tokens == 12
 
 
 def test_complete_raises_controlled_error_on_ollama_timeout() -> None:

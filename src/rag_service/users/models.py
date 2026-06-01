@@ -8,6 +8,7 @@ from rag_service.enums import BaseEnum
 
 if TYPE_CHECKING:
     from rag_service.api_keys.models import ApiKeyModel
+    from rag_service.chats.models import ChatCompletionRequestLogModel
 
 
 class Role(BaseEnum):
@@ -31,6 +32,11 @@ class UserModel(BaseModel):
 
     api_keys: Mapped[list["ApiKeyModel"]] = relationship(
         "ApiKeyModel",
+        back_populates="user",
+        lazy="selectin",
+    )
+    chat_completion_requests: Mapped[list["ChatCompletionRequestLogModel"]] = relationship(
+        "ChatCompletionRequestLogModel",
         back_populates="user",
         lazy="selectin",
     )
