@@ -21,11 +21,13 @@ from rag_service.llm_models.schema import (
 from rag_service.security.dependencies import AdminApiKeyDep, UserApiKeyDep
 from rag_service.utils import is_dev_env
 
-router = APIRouter(prefix="/llm-models", tags=["LLM Models"], include_in_schema=is_dev_env())
-openai_router = APIRouter(prefix="/models", tags=["Models"])
+llm_models_router = APIRouter(
+    prefix="/llm-models", tags=["LLM Models"], include_in_schema=is_dev_env()
+)
+models_router = APIRouter(prefix="/models", tags=["Models"])
 
 
-@router.get(
+@llm_models_router.get(
     path="",
     description="Get LLM models",
     responses={
@@ -44,7 +46,7 @@ async def get_llm_models(
     return LlmModelsList(models=[LlmModel.model_validate(model) for model in model_list])
 
 
-@router.get(
+@llm_models_router.get(
     path="/{model_id}",
     description="Get an LLM model by id",
     responses={
@@ -65,7 +67,7 @@ async def get_llm_model(
     return LlmModel.model_validate(model)
 
 
-@router.post(
+@llm_models_router.post(
     path="",
     status_code=status.HTTP_201_CREATED,
     description="Create an LLM model",
@@ -95,7 +97,7 @@ async def create_llm_model(
     return LlmModel.model_validate(model)
 
 
-@router.patch(
+@llm_models_router.patch(
     path="/{model_id}",
     description="Update an LLM model",
     responses={
@@ -127,7 +129,7 @@ async def update_llm_model(
     return LlmModel.model_validate(model)
 
 
-@router.delete(
+@llm_models_router.delete(
     path="/{model_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     description="Delete an LLM model",
@@ -148,7 +150,7 @@ async def delete_llm_model(
     await llm_model_service.delete_model(model_id)
 
 
-@openai_router.get(
+@models_router.get(
     path="",
     description="Get OpenAI-compatible model list",
     responses={
