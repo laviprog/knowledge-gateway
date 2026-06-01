@@ -1,7 +1,7 @@
 [project]
 name = "rag-service"
 version = "0.1.0"
-description = "Add your description here"
+description = "FastAPI service for OpenAI-compatible RAG chat completions."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
