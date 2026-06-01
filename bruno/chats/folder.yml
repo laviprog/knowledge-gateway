@@ -1,0 +1,9 @@
+info:
+  name: chats
+  type: folder
+  seq: 6
+
+request:
+  auth:
+    type: bearer
+    token: "{{API_KEY}}"

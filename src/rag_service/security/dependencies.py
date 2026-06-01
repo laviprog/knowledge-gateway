@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Annotated
 from uuid import UUID
 
@@ -9,30 +10,40 @@ from rag_service.exceptions import PermissionDeniedError, UnauthorizedError
 from rag_service.users.models import Role
 
 
+@dataclass(frozen=True)
+class AuthContext:
+    """
+    Authenticated API key context.
+    """
+
+    user_id: UUID
+    api_key_id: UUID
+
+
 async def require_admin_key(
     api_key_service: ApiKeyServiceDep,
     authorization: str | None = Header(default=None),
-) -> UUID:
+) -> AuthContext:
     api_key_model = await _verify_api_key(api_key_service, authorization)
     user = api_key_model.user
     if user.role != Role.ADMIN:
         raise PermissionDeniedError()
-    return user.id
+    return AuthContext(user_id=user.id, api_key_id=api_key_model.id)
 
 
 async def require_user_key(
     api_key_service: ApiKeyServiceDep,
     authorization: str | None = Header(default=None),
-) -> UUID:
+) -> AuthContext:
     api_key_model = await _verify_api_key(api_key_service, authorization)
-    return api_key_model.user.id
+    return AuthContext(user_id=api_key_model.user.id, api_key_id=api_key_model.id)
 
 
 async def _verify_api_key(
     api_key_service: ApiKeyServiceDep, authorization: str | None
 ) -> ApiKeyModel:
     """
-    Verify the API key from the Authorization header and return the associated API key ID.
+    Verify the API key from the Authorization header and return the associated API key.
     """
     if not authorization or not authorization.startswith("Bearer "):
         raise UnauthorizedError()
@@ -47,5 +58,5 @@ async def _verify_api_key(
     return api_key
 
 
-type UserApiKeyDep = Annotated[UUID, Depends(require_user_key)]
-type AdminApiKeyDep = Annotated[UUID, Depends(require_admin_key)]
+type UserApiKeyDep = Annotated[AuthContext, Depends(require_user_key)]
+type AdminApiKeyDep = Annotated[AuthContext, Depends(require_admin_key)]

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from rag_service.database.base_model import BaseModel
 
 if TYPE_CHECKING:
+    from rag_service.chats.models import ChatCompletionRequestLogModel
     from rag_service.users.models import UserModel
 
 
@@ -26,6 +27,11 @@ class ApiKeyModel(BaseModel):
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
     user: Mapped["UserModel"] = relationship(
         "UserModel", back_populates="api_keys", lazy="selectin"
+    )
+    chat_completion_requests: Mapped[list["ChatCompletionRequestLogModel"]] = relationship(
+        "ChatCompletionRequestLogModel",
+        back_populates="api_key",
+        lazy="selectin",
     )
 
     expires_at: Mapped[datetime | None]

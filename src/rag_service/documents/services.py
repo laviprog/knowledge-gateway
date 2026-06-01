@@ -1,3 +1,5 @@
+import time
+from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
@@ -12,6 +14,27 @@ from rag_service.ollama.embeddings import OllamaEmbeddingClient
 from rag_service.qdrant.schema import VectorSearchResult
 from rag_service.qdrant.vector_store import QdrantVectorStore
 from rag_service.utils import utc_now
+
+
+@dataclass(frozen=True)
+class DocumentSearchTimings:
+    """
+    Document search timings.
+    """
+
+    ollama_embedding_ms: float
+    qdrant_search_ms: float
+    total_ms: float
+
+
+@dataclass(frozen=True)
+class DocumentSearchWithMetrics:
+    """
+    Document search result with metrics.
+    """
+
+    results: list[VectorSearchResult]
+    timings: DocumentSearchTimings
 
 
 class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRepository]):
@@ -131,13 +154,38 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
         """
         Search indexed document chunks.
         """
+        search_result = await self.search_documents_with_metrics(query=query, limit=limit)
+        return search_result.results
+
+    async def search_documents_with_metrics(
+        self,
+        query: str,
+        limit: int,
+    ) -> DocumentSearchWithMetrics:
+        """
+        Search indexed document chunks and return timings.
+        """
+        total_start = time.perf_counter()
+
+        embedding_start = time.perf_counter()
         embeddings = await self.embedding_client.embed_texts([query])
+        ollama_embedding_ms = round((time.perf_counter() - embedding_start) * 1000, 2)
+
+        qdrant_start = time.perf_counter()
         search_results = await self.vector_store.search(
             query_embedding=embeddings[0],
             limit=limit,
         )
+        qdrant_search_ms = round((time.perf_counter() - qdrant_start) * 1000, 2)
 
-        return search_results
+        return DocumentSearchWithMetrics(
+            results=search_results,
+            timings=DocumentSearchTimings(
+                ollama_embedding_ms=ollama_embedding_ms,
+                qdrant_search_ms=qdrant_search_ms,
+                total_ms=round((time.perf_counter() - total_start) * 1000, 2),
+            ),
+        )
 
     async def delete_document(self, document_id: UUID) -> None:
         """
