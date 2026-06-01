@@ -1,6 +1,5 @@
-from ollama import AsyncClient
-
 from rag_service.config import settings
+from rag_service.ollama.client import get_ollama_client
 
 
 class OllamaEmbeddingClient:
@@ -9,14 +8,7 @@ class OllamaEmbeddingClient:
     """
 
     def __init__(self):
-        client_kwargs = {}
-        if settings.OLLAMA_API_KEY:
-            client_kwargs["headers"] = {"Authorization": f"Bearer {settings.OLLAMA_API_KEY}"}
-
-        self.client = AsyncClient(
-            host=settings.OLLAMA_BASE_URL,
-            **client_kwargs,
-        )
+        self.client = get_ollama_client()
         self.model = settings.OLLAMA_EMBEDDING_MODEL
 
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
@@ -29,6 +21,6 @@ class OllamaEmbeddingClient:
         response = await self.client.embed(
             model=self.model,
             input=texts,
-            keep_alive="30m",
+            keep_alive=settings.OLLAMA_KEEP_ALIVE,
         )
         return [list(embedding) for embedding in response.embeddings]

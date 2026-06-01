@@ -1,0 +1,37 @@
+info:
+  name: Create an OpenAI-compatible chat completion
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{API_BASE_URL}}/chat/completions"
+  body:
+    type: json
+    data: |-
+      {
+        "model": "assistent_2",
+        "messages": [
+          {
+            "role": "system",
+            "content": "Ты голосовой помощник компании. Отвечай кратко."
+          },
+          {
+            "role": "user",
+            "content": "Как мне сменить номер телефона?"
+          }
+        ],
+        "stream": true,
+        "stream_options": {
+          "include_usage": true
+        },
+        "temperature": 0.3,
+        "max_completion_tokens": 1024
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
 
-from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import Distance, PointIdsList, PointStruct, VectorParams
 
 from rag_service.config import settings
 from rag_service.documents.models import DocumentChunkModel
+from rag_service.qdrant.client import get_qdrant_client
 from rag_service.qdrant.schema import VectorSearchResult
 
 if TYPE_CHECKING:
@@ -17,10 +17,7 @@ class QdrantVectorStore:
     """
 
     def __init__(self):
-        self.client = AsyncQdrantClient(
-            url=settings.QDRANT_URL,
-            api_key=settings.QDRANT_API_KEY,
-        )
+        self.client = get_qdrant_client()
         self.collection_name = settings.QDRANT_COLLECTION_NAME
 
     async def ensure_collection(self, vector_size: int) -> None:
