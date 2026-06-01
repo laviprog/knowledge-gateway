@@ -3,7 +3,9 @@
 > A private LLM gateway with retrieval-augmented generation. OpenAI-compatible API, vector search
 > over your documents, and per-request usage logging — all self-hosted.
 
-[![CI](https://github.com/laviprog/rag-service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/laviprog/rag-service/actions/workflows/ci.yml)
+[![Tests](https://github.com/laviprog/rag-service/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/laviprog/rag-service/actions/workflows/tests.yml)
+[![Linting](https://github.com/laviprog/rag-service/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/laviprog/rag-service/actions/workflows/lint.yml)
+[![Type Checking](https://github.com/laviprog/rag-service/actions/workflows/typecheck.yml/badge.svg?branch=main)](https://github.com/laviprog/rag-service/actions/workflows/typecheck.yml)
 
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.130+-009688?logo=fastapi&logoColor=white)
