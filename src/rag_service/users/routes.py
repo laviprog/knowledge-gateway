@@ -105,7 +105,7 @@ async def update_user(
 ) -> User:
     user_model = await user_service.update_user(
         user_id=user_id,
-        current_admin_id=admin_id,
+        current_admin_id=admin_id.user_id,
         name=user_update.name,
         role=user_update.role,
     )
@@ -131,7 +131,7 @@ async def delete_user(
     admin_id: AdminApiKeyDep,
     user_service: UserServiceDep,
 ) -> None:
-    await user_service.delete_user(user_id=user_id, current_admin_id=admin_id)
+    await user_service.delete_user(user_id=user_id, current_admin_id=admin_id.user_id)
 
 
 @router.post(

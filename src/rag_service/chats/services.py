@@ -1,7 +1,18 @@
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
+from datetime import datetime
+from typing import TYPE_CHECKING
+from uuid import UUID
 
+from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
+from sqlalchemy import func, select
+
+from rag_service.chats.models import (
+    ChatCompletionRequestLogModel,
+    ChatCompletionRequestStatus,
+)
+from rag_service.chats.repositories import ChatCompletionRequestLogRepository
 from rag_service.config import settings
 from rag_service.documents.services import DocumentSearchWithMetrics, DocumentService
 from rag_service.llm_models.models import LlmModel
@@ -21,6 +32,9 @@ from .schema import (
 from .sse import build_chunk, build_usage_chunk, format_sse_event
 
 log = get_log(__name__)
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
 
 
 class ChatCompletionTimeoutError(Exception):
@@ -42,6 +56,30 @@ class ChatCompletionPlan:
     ollama_messages: list[dict[str, str]]
     retrieval: DocumentSearchWithMetrics
     started_at: float
+
+
+@dataclass(frozen=True)
+class ChatCompletionMetrics:
+    """
+    Chat completion token and latency metrics.
+    """
+
+    prompt_tokens: int | None
+    completion_tokens: int | None
+    total_tokens: int | None
+    ollama_ttfb_ms: float | None
+    ollama_generation_ms: float | None
+    total_ms: float
+
+
+@dataclass(frozen=True)
+class ChatCompletionResult:
+    """
+    Non-streaming chat completion response with metrics.
+    """
+
+    response: ChatCompletionResponse
+    metrics: ChatCompletionMetrics
 
 
 class ChatCompletionService:
@@ -105,7 +143,12 @@ class ChatCompletionService:
             started_at=started_at,
         )
 
-    async def stream_completion(self, plan: ChatCompletionPlan) -> AsyncIterator[str]:
+    async def stream_completion(
+        self,
+        plan: ChatCompletionPlan,
+        on_complete: Callable[[ChatCompletionMetrics], Awaitable[None]] | None = None,
+        on_timeout: Callable[[ChatCompletionMetrics], Awaitable[None]] | None = None,
+    ) -> AsyncIterator[str]:
         """
         Stream an OpenAI-compatible chat completion.
         """
@@ -172,14 +215,22 @@ class ChatCompletionService:
                     )
                 )
 
-            yield format_sse_event("[DONE]")
-            self.log_completed(
+            metrics = self.log_completed(
                 plan=plan,
                 generation_start=generation_start,
                 first_token_ms=first_token_ms,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
             )
+            if on_complete is not None:
+                await on_complete(metrics)
+
+            yield format_sse_event("[DONE]")
         except OllamaTimeoutError:
-            self.log_timeout(plan=plan)
+            metrics = self.log_timeout(plan=plan)
+            if on_timeout is not None:
+                await on_timeout(metrics)
+
             yield format_sse_event(
                 {
                     "error": {
@@ -199,7 +250,7 @@ class ChatCompletionService:
             )
             raise
 
-    async def complete(self, plan: ChatCompletionPlan) -> ChatCompletionResponse:
+    async def complete(self, plan: ChatCompletionPlan) -> ChatCompletionResult:
         """
         Create a non-streaming OpenAI-compatible chat completion.
         """
@@ -236,10 +287,12 @@ class ChatCompletionService:
             )
             raise
 
-        self.log_completed(
+        metrics = self.log_completed(
             plan=plan,
             generation_start=generation_start,
             first_token_ms=first_token_ms,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
         )
 
         usage = None
@@ -250,16 +303,19 @@ class ChatCompletionService:
                 total_tokens=prompt_tokens + completion_tokens,
             )
 
-        return ChatCompletionResponse(
-            id=plan.completion_id,
-            created=plan.created,
-            model=plan.request.model,
-            choices=[
-                ChatCompletionChoice(
-                    message=ChatCompletionMessage(content="".join(content_parts)),
-                )
-            ],
-            usage=usage,
+        return ChatCompletionResult(
+            response=ChatCompletionResponse(
+                id=plan.completion_id,
+                created=plan.created,
+                model=plan.request.model,
+                choices=[
+                    ChatCompletionChoice(
+                        message=ChatCompletionMessage(content="".join(content_parts)),
+                    )
+                ],
+                usage=usage,
+            ),
+            metrics=metrics,
         )
 
     async def iter_ollama_chunks(
@@ -287,10 +343,25 @@ class ChatCompletionService:
         plan: ChatCompletionPlan,
         generation_start: float,
         first_token_ms: float | None,
-    ) -> None:
+        prompt_tokens: int | None,
+        completion_tokens: int | None,
+    ) -> ChatCompletionMetrics:
         """
         Log chat completion metrics.
         """
+        metrics = ChatCompletionMetrics(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=(
+                prompt_tokens + completion_tokens
+                if prompt_tokens is not None and completion_tokens is not None
+                else None
+            ),
+            ollama_ttfb_ms=first_token_ms,
+            ollama_generation_ms=round((time.perf_counter() - generation_start) * 1000, 2),
+            total_ms=round((time.perf_counter() - plan.started_at) * 1000, 2),
+        )
+
         log.info(
             "Chat completion completed",
             model=plan.request.model,
@@ -299,15 +370,26 @@ class ChatCompletionService:
             ollama_embedding_ms=plan.retrieval.timings.ollama_embedding_ms,
             qdrant_search_ms=plan.retrieval.timings.qdrant_search_ms,
             retrieval_total_ms=plan.retrieval.timings.total_ms,
-            ollama_ttfb_ms=first_token_ms,
-            ollama_generation_ms=round((time.perf_counter() - generation_start) * 1000, 2),
-            total_ms=round((time.perf_counter() - plan.started_at) * 1000, 2),
+            ollama_ttfb_ms=metrics.ollama_ttfb_ms,
+            ollama_generation_ms=metrics.ollama_generation_ms,
+            total_ms=metrics.total_ms,
         )
 
-    def log_timeout(self, plan: ChatCompletionPlan) -> None:
+        return metrics
+
+    def log_timeout(self, plan: ChatCompletionPlan) -> ChatCompletionMetrics:
         """
         Log chat completion timeout without traceback.
         """
+        metrics = ChatCompletionMetrics(
+            prompt_tokens=None,
+            completion_tokens=None,
+            total_tokens=None,
+            ollama_ttfb_ms=None,
+            ollama_generation_ms=None,
+            total_ms=round((time.perf_counter() - plan.started_at) * 1000, 2),
+        )
+
         log.warning(
             "Chat completion timed out",
             model=plan.request.model,
@@ -317,5 +399,191 @@ class ChatCompletionService:
             ollama_embedding_ms=plan.retrieval.timings.ollama_embedding_ms,
             qdrant_search_ms=plan.retrieval.timings.qdrant_search_ms,
             retrieval_total_ms=plan.retrieval.timings.total_ms,
-            total_ms=round((time.perf_counter() - plan.started_at) * 1000, 2),
+            total_ms=metrics.total_ms,
         )
+
+        return metrics
+
+
+class ChatCompletionRequestLogService(
+    SQLAlchemyAsyncRepositoryService[
+        ChatCompletionRequestLogModel,
+        ChatCompletionRequestLogRepository,
+    ]
+):
+    """Chat Completion Request Log Service"""
+
+    repository_type = ChatCompletionRequestLogRepository
+
+    async def create_pending(
+        self,
+        *,
+        user_id: UUID,
+        api_key_id: UUID,
+        chat_request: ChatCompletionRequest,
+    ) -> ChatCompletionRequestLogModel:
+        """
+        Create a pending usage log row before model generation starts.
+        """
+        request_log = ChatCompletionRequestLogModel(
+            user_id=user_id,
+            api_key_id=api_key_id,
+            model_public_id=chat_request.model,
+            request_id=f"chatreq-{generate_uuid()}",
+            stream=chat_request.stream,
+            status=ChatCompletionRequestStatus.PENDING,
+            messages_count=len(chat_request.messages),
+            query_length=get_query_length(chat_request),
+        )
+        return await self.repository.add(request_log, auto_commit=True)
+
+    async def mark_prepared(
+        self,
+        *,
+        request_log: ChatCompletionRequestLogModel,
+        plan: ChatCompletionPlan,
+    ) -> ChatCompletionRequestLogModel:
+        """
+        Save model and retrieval details once request preparation succeeds.
+        """
+        self.apply_plan(request_log, plan)
+        return await self.repository.update(request_log, auto_commit=True)
+
+    async def finish_succeeded(
+        self,
+        *,
+        request_log: ChatCompletionRequestLogModel,
+        plan: ChatCompletionPlan,
+        metrics: ChatCompletionMetrics,
+    ) -> ChatCompletionRequestLogModel:
+        """
+        Mark a chat completion request as succeeded.
+        """
+        self.apply_plan(request_log, plan)
+        self.apply_metrics(request_log, metrics)
+        request_log.status = ChatCompletionRequestStatus.SUCCEEDED
+        request_log.error_code = None
+        request_log.error_message = None
+        return await self.repository.update(request_log, auto_commit=True)
+
+    async def finish_failed(
+        self,
+        *,
+        request_log: ChatCompletionRequestLogModel,
+        error_code: str,
+        error_message: str,
+        plan: ChatCompletionPlan | None = None,
+        metrics: ChatCompletionMetrics | None = None,
+    ) -> ChatCompletionRequestLogModel:
+        """
+        Mark a chat completion request as failed.
+        """
+        if plan is not None:
+            self.apply_plan(request_log, plan)
+        if metrics is not None:
+            self.apply_metrics(request_log, metrics)
+        elif plan is not None:
+            request_log.total_ms = round((time.perf_counter() - plan.started_at) * 1000, 2)
+
+        request_log.status = ChatCompletionRequestStatus.FAILED
+        request_log.error_code = error_code
+        request_log.error_message = error_message[:1000]
+        return await self.repository.update(request_log, auto_commit=True)
+
+    async def finish_interrupted(
+        self,
+        *,
+        request_log: ChatCompletionRequestLogModel,
+        plan: ChatCompletionPlan,
+    ) -> ChatCompletionRequestLogModel:
+        """
+        Mark a streaming request as interrupted by the client.
+        """
+        self.apply_plan(request_log, plan)
+        request_log.status = ChatCompletionRequestStatus.INTERRUPTED
+        request_log.error_code = "client_disconnected"
+        request_log.error_message = "Streaming response was interrupted before completion"
+        request_log.total_ms = round((time.perf_counter() - plan.started_at) * 1000, 2)
+        return await self.repository.update(request_log, auto_commit=True)
+
+    async def list_requests(
+        self,
+        *,
+        user_id: UUID | None = None,
+        api_key_id: UUID | None = None,
+        model: str | None = None,
+        status: ChatCompletionRequestStatus | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> tuple[list[ChatCompletionRequestLogModel], int]:
+        """
+        List usage log rows with basic admin filters.
+        """
+        filters: list[ColumnElement[bool]] = [ChatCompletionRequestLogModel.deleted_at.is_(None)]
+        if user_id is not None:
+            filters.append(ChatCompletionRequestLogModel.user_id == user_id)
+        if api_key_id is not None:
+            filters.append(ChatCompletionRequestLogModel.api_key_id == api_key_id)
+        if model is not None:
+            filters.append(ChatCompletionRequestLogModel.model_public_id == model)
+        if status is not None:
+            filters.append(ChatCompletionRequestLogModel.status == status)
+        if date_from is not None:
+            filters.append(ChatCompletionRequestLogModel.created_at >= date_from)
+        if date_to is not None:
+            filters.append(ChatCompletionRequestLogModel.created_at <= date_to)
+
+        statement = (
+            select(ChatCompletionRequestLogModel)
+            .where(*filters)
+            .order_by(ChatCompletionRequestLogModel.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        count_statement = (
+            select(func.count()).select_from(ChatCompletionRequestLogModel).where(*filters)
+        )
+
+        result = await self.repository.session.execute(statement)
+        count_result = await self.repository.session.execute(count_statement)
+        return list(result.scalars().all()), count_result.scalar_one()
+
+    @staticmethod
+    def apply_plan(
+        request_log: ChatCompletionRequestLogModel,
+        plan: ChatCompletionPlan,
+    ) -> None:
+        request_log.model_id = plan.llm_model.id
+        request_log.model_public_id = plan.llm_model.public_id
+        request_log.provider = plan.llm_model.provider
+        request_log.provider_model = plan.llm_model.provider_model
+        request_log.completion_id = plan.completion_id
+        request_log.chunks_count = len(plan.retrieval.results)
+        request_log.ollama_embedding_ms = plan.retrieval.timings.ollama_embedding_ms
+        request_log.qdrant_search_ms = plan.retrieval.timings.qdrant_search_ms
+        request_log.retrieval_total_ms = plan.retrieval.timings.total_ms
+
+    @staticmethod
+    def apply_metrics(
+        request_log: ChatCompletionRequestLogModel,
+        metrics: ChatCompletionMetrics,
+    ) -> None:
+        request_log.prompt_tokens = metrics.prompt_tokens
+        request_log.completion_tokens = metrics.completion_tokens
+        request_log.total_tokens = metrics.total_tokens
+        request_log.ollama_ttfb_ms = metrics.ollama_ttfb_ms
+        request_log.ollama_generation_ms = metrics.ollama_generation_ms
+        request_log.total_ms = metrics.total_ms
+
+
+def get_query_length(chat_request: ChatCompletionRequest) -> int | None:
+    """
+    Return latest non-empty user message length without storing message content.
+    """
+    for message in reversed(chat_request.messages):
+        if message.role == "user" and message.content.strip():
+            return len(message.content)
+
+    return None

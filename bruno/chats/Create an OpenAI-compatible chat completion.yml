@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "model": "assistent_2",
+        "model": "asistent_5",
         "messages": [
           {
             "role": "system",
@@ -18,7 +18,7 @@ http:
           },
           {
             "role": "user",
-            "content": "Как мне сменить номер телефона?"
+            "content": "Привет!"
           }
         ],
         "stream": true,

@@ -1,7 +1,12 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from rag_service.database.base_model import BaseModel
+
+if TYPE_CHECKING:
+    from rag_service.chats.models import ChatCompletionRequestLogModel
 
 
 class LlmModel(BaseModel):
@@ -17,3 +22,8 @@ class LlmModel(BaseModel):
     context_window_tokens: Mapped[int]
     max_completion_tokens: Mapped[int]
     description: Mapped[str | None] = mapped_column(Text)
+    chat_completion_requests: Mapped[list["ChatCompletionRequestLogModel"]] = relationship(
+        "ChatCompletionRequestLogModel",
+        back_populates="llm_model",
+        lazy="selectin",
+    )
