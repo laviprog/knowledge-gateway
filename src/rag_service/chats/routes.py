@@ -4,9 +4,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse, StreamingResponse
+from starlette.requests import Request
 
 from rag_service.chats.dependencies import ChatCompletionRequestLogServiceDep
 from rag_service.chats.models import ChatCompletionRequestStatus
+from rag_service.config import settings
 from rag_service.documents.dependencies import DocumentServiceDep
 from rag_service.exceptions import BadRequestError, NotFoundError
 from rag_service.exceptions.responses import (
@@ -15,6 +17,7 @@ from rag_service.exceptions.responses import (
     validation_error_response,
 )
 from rag_service.llm_models.dependencies import LlmModelServiceDep
+from rag_service.rate_limit import limiter
 from rag_service.security.dependencies import AdminApiKeyDep, UserApiKeyDep
 from rag_service.utils import is_dev_env
 
@@ -42,12 +45,15 @@ router = APIRouter(tags=["Chat Completions"])
         **auth_responses,
         400: {"model": OpenAIErrorResponse, "description": "Invalid request"},
         404: {"model": OpenAIErrorResponse, "description": "Model not found"},
+        429: {"model": OpenAIErrorResponse, "description": "Rate limit exceeded"},
         503: {"model": OpenAIErrorResponse, "description": "LLM provider timeout"},
         **validation_error_response,
         **internal_server_error_response,
     },
 )
+@limiter.limit(settings.RATE_LIMIT_CHAT_COMPLETIONS)
 async def create_chat_completion(
+    request: Request,
     chat_request: ChatCompletionRequest,
     auth_context: UserApiKeyDep,
     document_service: DocumentServiceDep,

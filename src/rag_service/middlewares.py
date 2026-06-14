@@ -3,6 +3,7 @@ import time
 import structlog
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from rag_service.config import settings
 from rag_service.log_config import get_log
 from rag_service.utils import generate_uuid
 
@@ -18,9 +19,11 @@ class LogMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request, call_next):
         correlation_id = request.headers.get("X-Request-Id") or generate_uuid()
-        ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or (
-            request.client.host if request.client else None
-        )
+        direct_ip = request.client.host if request.client else None
+        if direct_ip and direct_ip in settings.TRUSTED_PROXY_IPS:
+            ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or direct_ip
+        else:
+            ip = direct_ip
 
         # Bind context variables for structured logging
         structlog.contextvars.bind_contextvars(

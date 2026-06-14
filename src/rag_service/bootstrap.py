@@ -28,6 +28,8 @@ async def create_default_admin() -> None:
                 log.info("Bootstrap admin API key has been loaded from configuration")
             else:
                 log.warning(
-                    "Generated bootstrap admin API key",
-                    api_key_value=api_key_value,
+                    "Bootstrap admin API key was auto-generated. "
+                    "Set BOOTSTRAP_ADMIN_API_KEY in .env to fix the key across restarts. "
+                    "Retrieve the current key from the database (api_keys.key_prefix column).",
+                    key_prefix=api_key_value[:12],
                 )
