@@ -13,8 +13,14 @@ class Settings(BaseSettings):
 
     ROOT_PATH: str = "/api/v1"  # API root path
 
-    API_KEY_PEPPER: str = "some_random_pepper_value"  # Used for hashing API keys
+    API_KEY_PEPPER: str  # Used for hashing API keys — must be set explicitly, no default
     API_KEY_DEFAULT_PREFIX: str = "syn_rag"  # Default prefix for generated API keys
+
+    # Comma-separated list of trusted reverse-proxy IPs whose X-Forwarded-For header is trusted
+    TRUSTED_PROXY_IPS: list[str] = []
+
+    # Rate limiting for chat completions (format: "N/period", e.g. "60/minute", "1000/hour")
+    RATE_LIMIT_CHAT_COMPLETIONS: str = "60/minute"
 
     BOOTSTRAP_ADMIN_NAME: str = "default_admin"
     BOOTSTRAP_ADMIN_API_KEY_NAME: str = "admin1"
