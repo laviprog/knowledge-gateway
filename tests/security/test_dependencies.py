@@ -24,13 +24,14 @@ def as_dependency(value: object) -> Any:
     return value
 
 
+def _user(role: Role, requests_per_minute: int = 60, **kwargs) -> SimpleNamespace:
+    return SimpleNamespace(role=role, requests_per_minute=requests_per_minute, **kwargs)
+
+
 def test_require_admin_key_returns_user_id_for_admin_key() -> None:
     user_id = uuid4()
     api_key_id = uuid4()
-    api_key_model = SimpleNamespace(
-        id=api_key_id,
-        user=SimpleNamespace(id=user_id, role=Role.ADMIN),
-    )
+    api_key_model = SimpleNamespace(id=api_key_id, user=_user(Role.ADMIN, id=user_id))
     api_key_service = FakeApiKeyService(api_key_model)
 
     result = asyncio.run(
@@ -42,13 +43,14 @@ def test_require_admin_key_returns_user_id_for_admin_key() -> None:
 
     assert result.user_id == user_id
     assert result.api_key_id == api_key_id
+    assert result.requests_per_minute == 60
     assert api_key_service.validated_api_key == "secret"
 
 
 def test_require_user_key_returns_auth_context_for_user_key() -> None:
     user_id = uuid4()
     api_key_id = uuid4()
-    api_key_model = SimpleNamespace(id=api_key_id, user=SimpleNamespace(id=user_id, role=Role.USER))
+    api_key_model = SimpleNamespace(id=api_key_id, user=_user(Role.USER, id=user_id))
     api_key_service = FakeApiKeyService(api_key_model)
 
     result = asyncio.run(
@@ -60,6 +62,7 @@ def test_require_user_key_returns_auth_context_for_user_key() -> None:
 
     assert result.user_id == user_id
     assert result.api_key_id == api_key_id
+    assert result.requests_per_minute == 60
 
 
 def test_require_admin_key_rejects_missing_authorization_header() -> None:
@@ -78,7 +81,7 @@ def test_require_admin_key_rejects_missing_authorization_header() -> None:
 
 def test_require_admin_key_rejects_non_admin_key() -> None:
     user_id = uuid4()
-    api_key_model = SimpleNamespace(id=uuid4(), user=SimpleNamespace(id=user_id, role=Role.USER))
+    api_key_model = SimpleNamespace(id=uuid4(), user=_user(Role.USER, id=user_id))
     api_key_service = FakeApiKeyService(api_key_model)
 
     with pytest.raises(PermissionDeniedError):
