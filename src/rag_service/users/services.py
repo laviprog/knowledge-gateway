@@ -143,6 +143,9 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
         return await self.api_key_service.list_for_user(user.id)
 
     async def get_by_id_or_raise(self, user_id: UUID) -> UserModel:
+        """
+        Return an active user or raise an exception if it does not exist.
+        """
         user = await self.repository.get_one_or_none(
             UserModel.deleted_at.is_(None),
             id=user_id,
