@@ -15,6 +15,7 @@ from rag_service.exceptions.responses import (
     validation_error_response,
 )
 from rag_service.llm_models.dependencies import LlmModelServiceDep
+from rag_service.redis.rate_limiter import is_rate_limited
 from rag_service.security.dependencies import AdminApiKeyDep, UserApiKeyDep
 from rag_service.utils import is_dev_env
 
@@ -42,6 +43,7 @@ router = APIRouter(tags=["Chat Completions"])
         **auth_responses,
         400: {"model": OpenAIErrorResponse, "description": "Invalid request"},
         404: {"model": OpenAIErrorResponse, "description": "Model not found"},
+        429: {"model": OpenAIErrorResponse, "description": "Rate limit exceeded"},
         503: {"model": OpenAIErrorResponse, "description": "LLM provider timeout"},
         **validation_error_response,
         **internal_server_error_response,
@@ -54,6 +56,14 @@ async def create_chat_completion(
     llm_model_service: LlmModelServiceDep,
     request_log_service: ChatCompletionRequestLogServiceDep,
 ) -> ChatCompletionResponse | StreamingResponse | JSONResponse:
+    if await is_rate_limited(auth_context.user_id, auth_context.requests_per_minute):
+        return openai_error_response(
+            status_code=429,
+            message="Rate limit exceeded. Please slow down your requests.",
+            error_type="rate_limit_error",
+            code="rate_limit_exceeded",
+        )
+
     service = ChatCompletionService(
         document_service=document_service,
         llm_model_service=llm_model_service,

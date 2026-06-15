@@ -79,6 +79,7 @@ async def create_user(
     user_model = await user_service.create_user(
         name=user_create.name,
         role=user_create.role,
+        requests_per_minute=user_create.requests_per_minute,
     )
     return User.model_validate(user_model)
 
@@ -108,6 +109,7 @@ async def update_user(
         current_admin_id=admin_id.user_id,
         name=user_update.name,
         role=user_update.role,
+        requests_per_minute=user_update.requests_per_minute,
     )
     return User.model_validate(user_model)
 

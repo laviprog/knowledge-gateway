@@ -30,6 +30,7 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
         self,
         name: str,
         role: Role = Role.USER,
+        requests_per_minute: int = 60,
     ) -> UserModel:
         """
         Create a user.
@@ -38,6 +39,7 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
             UserModel(
                 name=name,
                 role=role,
+                requests_per_minute=requests_per_minute,
             ),
             auto_commit=True,
         )
@@ -49,12 +51,13 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
         api_key_value: str | None = None,
     ) -> tuple[UserModel, str]:
         """
-        Create an admin with an API key.
+        Create an admin with an API key. Admins are unlimited (requests_per_minute=0).
         """
         admin = await self.repository.add(
             UserModel(
                 name=name,
                 role=Role.ADMIN,
+                requests_per_minute=0,
             )
         )
         await self.repository.session.flush()
@@ -76,6 +79,7 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
         current_admin_id: UUID,
         name: str | None = None,
         role: Role | None = None,
+        requests_per_minute: int | None = None,
     ) -> UserModel:
         """
         Update an active user.
@@ -90,6 +94,9 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
 
         if role is not None:
             user.role = role
+
+        if requests_per_minute is not None:
+            user.requests_per_minute = requests_per_minute
 
         return await self.repository.update(user, auto_commit=True)
 
@@ -136,6 +143,9 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
         return await self.api_key_service.list_for_user(user.id)
 
     async def get_by_id_or_raise(self, user_id: UUID) -> UserModel:
+        """
+        Return an active user or raise an exception if it does not exist.
+        """
         user = await self.repository.get_one_or_none(
             UserModel.deleted_at.is_(None),
             id=user_id,

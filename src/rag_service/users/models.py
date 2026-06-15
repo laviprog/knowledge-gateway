@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Enum, String
+from sqlalchemy import Enum, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from rag_service.database.base_model import BaseModel
@@ -29,6 +29,7 @@ class UserModel(BaseModel):
 
     name: Mapped[str] = mapped_column(String(255))
     role: Mapped[Role] = mapped_column(Enum(Role), default=Role.USER)
+    requests_per_minute: Mapped[int] = mapped_column(Integer, default=60)
 
     api_keys: Mapped[list["ApiKeyModel"]] = relationship(
         "ApiKeyModel",

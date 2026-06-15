@@ -18,6 +18,7 @@ class AuthContext:
 
     user_id: UUID
     api_key_id: UUID
+    requests_per_minute: int
 
 
 async def require_admin_key(
@@ -28,7 +29,11 @@ async def require_admin_key(
     user = api_key_model.user
     if user.role != Role.ADMIN:
         raise PermissionDeniedError()
-    return AuthContext(user_id=user.id, api_key_id=api_key_model.id)
+    return AuthContext(
+        user_id=user.id,
+        api_key_id=api_key_model.id,
+        requests_per_minute=user.requests_per_minute,
+    )
 
 
 async def require_user_key(
@@ -36,7 +41,12 @@ async def require_user_key(
     authorization: str | None = Header(default=None),
 ) -> AuthContext:
     api_key_model = await _verify_api_key(api_key_service, authorization)
-    return AuthContext(user_id=api_key_model.user.id, api_key_id=api_key_model.id)
+    user = api_key_model.user
+    return AuthContext(
+        user_id=user.id,
+        api_key_id=api_key_model.id,
+        requests_per_minute=user.requests_per_minute,
+    )
 
 
 async def _verify_api_key(

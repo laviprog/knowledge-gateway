@@ -13,8 +13,17 @@ class Settings(BaseSettings):
 
     ROOT_PATH: str = "/api/v1"  # API root path
 
-    API_KEY_PEPPER: str = "some_random_pepper_value"  # Used for hashing API keys
+    API_KEY_PEPPER: str  # Used for hashing API keys — must be set explicitly, no default
     API_KEY_DEFAULT_PREFIX: str = "syn_rag"  # Default prefix for generated API keys
+
+    # Comma-separated list of trusted reverse-proxy IPs whose X-Forwarded-For header is trusted
+    TRUSTED_PROXY_IPS: list[str] = []
+
+    # Redis configuration (used for per-user rate limiting)
+    REDIS_URL: str = "redis://localhost:6379"
+
+    # Default rate limit for new users (0 = unlimited)
+    RATE_LIMIT_DEFAULT_REQUESTS_PER_MINUTE: int = 60
 
     BOOTSTRAP_ADMIN_NAME: str = "default_admin"
     BOOTSTRAP_ADMIN_API_KEY_NAME: str = "admin1"
