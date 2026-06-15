@@ -4,11 +4,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse, StreamingResponse
-from starlette.requests import Request
 
 from rag_service.chats.dependencies import ChatCompletionRequestLogServiceDep
 from rag_service.chats.models import ChatCompletionRequestStatus
-from rag_service.config import settings
 from rag_service.documents.dependencies import DocumentServiceDep
 from rag_service.exceptions import BadRequestError, NotFoundError
 from rag_service.exceptions.responses import (
@@ -17,7 +15,7 @@ from rag_service.exceptions.responses import (
     validation_error_response,
 )
 from rag_service.llm_models.dependencies import LlmModelServiceDep
-from rag_service.rate_limit import limiter
+from rag_service.redis.rate_limiter import is_rate_limited
 from rag_service.security.dependencies import AdminApiKeyDep, UserApiKeyDep
 from rag_service.utils import is_dev_env
 
@@ -51,15 +49,21 @@ router = APIRouter(tags=["Chat Completions"])
         **internal_server_error_response,
     },
 )
-@limiter.limit(settings.RATE_LIMIT_CHAT_COMPLETIONS)
 async def create_chat_completion(
-    request: Request,
     chat_request: ChatCompletionRequest,
     auth_context: UserApiKeyDep,
     document_service: DocumentServiceDep,
     llm_model_service: LlmModelServiceDep,
     request_log_service: ChatCompletionRequestLogServiceDep,
 ) -> ChatCompletionResponse | StreamingResponse | JSONResponse:
+    if await is_rate_limited(auth_context.user_id, auth_context.requests_per_minute):
+        return openai_error_response(
+            status_code=429,
+            message="Rate limit exceeded. Please slow down your requests.",
+            error_type="rate_limit_error",
+            code="rate_limit_exceeded",
+        )
+
     service = ChatCompletionService(
         document_service=document_service,
         llm_model_service=llm_model_service,

@@ -19,8 +19,11 @@ class Settings(BaseSettings):
     # Comma-separated list of trusted reverse-proxy IPs whose X-Forwarded-For header is trusted
     TRUSTED_PROXY_IPS: list[str] = []
 
-    # Rate limiting for chat completions (format: "N/period", e.g. "60/minute", "1000/hour")
-    RATE_LIMIT_CHAT_COMPLETIONS: str = "60/minute"
+    # Redis configuration (used for per-user rate limiting)
+    REDIS_URL: str = "redis://localhost:6379"
+
+    # Default rate limit for new users (0 = unlimited)
+    RATE_LIMIT_DEFAULT_REQUESTS_PER_MINUTE: int = 60
 
     BOOTSTRAP_ADMIN_NAME: str = "default_admin"
     BOOTSTRAP_ADMIN_API_KEY_NAME: str = "admin1"

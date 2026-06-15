@@ -18,8 +18,8 @@ api = [
     "ollama>=0.6.2",
     "python-multipart>=0.0.29",
     "qdrant-client>=1.18.0",
+    "redis[asyncio]>=5.0.0",
     "scalar-fastapi>=1.8.2",
-    "slowapi>=0.1.9",
     "uvicorn[standard]>=0.47.0",
 ]
 migrate = [

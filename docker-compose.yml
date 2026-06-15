@@ -54,6 +54,19 @@ services:
       start_period: 15s
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      - rag-service-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -68,6 +81,8 @@ services:
       migrate:
         condition: service_completed_successfully
       qdrant:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
 
