@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import Field, field_validator
 
-from rag_service.schema import BaseSchema
+from rag_service.schema import BaseSchema, PaginatedList
 from rag_service.utils import utc_now
 
 
@@ -44,5 +44,5 @@ class ApiKeyCreated(BaseSchema):
     api_key_info: ApiKey
 
 
-class ApiKeysList(BaseSchema):
+class ApiKeysList(PaginatedList):
     api_keys: list[ApiKey]

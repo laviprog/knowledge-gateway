@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
+from advanced_alchemy.filters import LimitOffset, OrderBy
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 
 from rag_service.config import settings
@@ -48,12 +49,16 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
         self.embedding_client = OllamaEmbeddingClient()
         self.vector_store = QdrantVectorStore()
 
-    async def list_active(self) -> list[DocumentModel]:
+    async def list_active(self, limit: int, offset: int) -> tuple[list[DocumentModel], int]:
         """
-        Return documents that have not been soft-deleted.
+        Return a page of documents that have not been soft-deleted, with the total count.
         """
-        documents = await self.repository.list(DocumentModel.deleted_at.is_(None))
-        return list(documents)
+        documents, total = await self.repository.list_and_count(
+            DocumentModel.deleted_at.is_(None),
+            LimitOffset(limit=limit, offset=offset),
+            OrderBy(field_name="created_at", sort_order="desc"),
+        )
+        return list(documents), total
 
     async def create_document(
         self,

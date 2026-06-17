@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from advanced_alchemy.filters import LimitOffset, OrderBy
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 
 from rag_service.exceptions import ConflictError, NotFoundError
@@ -14,10 +15,21 @@ class LlmModelService(SQLAlchemyAsyncRepositoryService[LlmModel, LlmModelReposit
 
     async def list_not_deleted(self) -> list[LlmModel]:
         """
-        Return LLM models that have not been soft-deleted.
+        Return all LLM models that have not been soft-deleted.
         """
         models = await self.repository.list(LlmModel.deleted_at.is_(None))
         return list(models)
+
+    async def list_paginated(self, limit: int, offset: int) -> tuple[list[LlmModel], int]:
+        """
+        Return a page of LLM models that have not been soft-deleted, with the total count.
+        """
+        models, total = await self.repository.list_and_count(
+            LlmModel.deleted_at.is_(None),
+            LimitOffset(limit=limit, offset=offset),
+            OrderBy(field_name="created_at", sort_order="desc"),
+        )
+        return list(models), total
 
     async def create_model(
         self,

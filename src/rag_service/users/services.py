@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
+from advanced_alchemy.filters import LimitOffset, OrderBy
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 
 from rag_service.api_keys.models import ApiKeyModel
@@ -19,12 +20,16 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
         super().__init__(session=session, **kwargs)
         self.api_key_service = ApiKeyService(session=session)
 
-    async def list_active(self) -> list[UserModel]:
+    async def list_active(self, limit: int, offset: int) -> tuple[list[UserModel], int]:
         """
-        Return users that have not been soft-deleted.
+        Return a page of users that have not been soft-deleted, with the total count.
         """
-        users = await self.repository.list(UserModel.deleted_at.is_(None))
-        return list(users)
+        users, total = await self.repository.list_and_count(
+            UserModel.deleted_at.is_(None),
+            LimitOffset(limit=limit, offset=offset),
+            OrderBy(field_name="created_at", sort_order="desc"),
+        )
+        return list(users), total
 
     async def create_user(
         self,
@@ -135,12 +140,17 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
 
         return api_key_model, api_key_value
 
-    async def list_api_keys_for_user(self, user_id: UUID) -> list[ApiKeyModel]:
+    async def list_api_keys_for_user(
+        self,
+        user_id: UUID,
+        limit: int,
+        offset: int,
+    ) -> tuple[list[ApiKeyModel], int]:
         """
-        Return API keys for an existing active user.
+        Return a page of API keys for an existing active user, with the total count.
         """
         user = await self.get_by_id_or_raise(user_id)
-        return await self.api_key_service.list_for_user(user.id)
+        return await self.api_key_service.list_for_user(user.id, limit=limit, offset=offset)
 
     async def get_by_id_or_raise(self, user_id: UUID) -> UserModel:
         """

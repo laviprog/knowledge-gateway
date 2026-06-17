@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import Field
 
 from rag_service.documents.models import DocumentIndexStatus
-from rag_service.schema import BaseSchema
+from rag_service.schema import BaseSchema, PaginatedList
 
 
 class DocumentCreate(BaseSchema):
@@ -31,7 +31,7 @@ class Document(BaseSchema):
     updated_at: datetime
 
 
-class DocumentsList(BaseSchema):
+class DocumentsList(PaginatedList):
     documents: list[Document]
 
 
