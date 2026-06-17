@@ -10,10 +10,10 @@ http:
     type: json
     data: |-
       {
-        "public_id": "asistent_1",
+        "public_id": "assistant_lite",
         "provider": "ollama",
-        "provider_model": "qwen3.6:27b",
-        "context_window_tokens": 256000,
+        "provider_model": "gemma4:e4b",
+        "context_window_tokens": 128000,
         "max_completion_tokens": 8192
       }
   auth: inherit

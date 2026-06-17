@@ -10,7 +10,8 @@ http:
     type: json
     data: |-
       {
-        "query": "smth"
+        "query": "Как отключить кэшбек?",
+        "limit": 10
       }
   auth: inherit
 
