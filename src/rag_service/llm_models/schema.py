@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import Field
 
-from rag_service.schema import BaseSchema
+from rag_service.schema import BaseSchema, PaginatedList
 
 
 class LlmModelCreate(BaseSchema):
@@ -37,7 +37,7 @@ class LlmModel(BaseSchema):
     updated_at: datetime
 
 
-class LlmModelsList(BaseSchema):
+class LlmModelsList(PaginatedList):
     models: list[LlmModel]
 
 

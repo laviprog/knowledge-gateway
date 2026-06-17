@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
+from advanced_alchemy.filters import LimitOffset, OrderBy
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 from sqlalchemy import or_
 
@@ -55,15 +56,22 @@ class ApiKeyService(SQLAlchemyAsyncRepositoryService[ApiKeyModel, ApiKeyReposito
 
         return api_key_model, api_key
 
-    async def list_for_user(self, user_id: UUID) -> list[ApiKeyModel]:
+    async def list_for_user(
+        self,
+        user_id: UUID,
+        limit: int,
+        offset: int,
+    ) -> tuple[list[ApiKeyModel], int]:
         """
-        Return non-deleted API keys for the given user.
+        Return a page of non-deleted API keys for the given user, with the total count.
         """
-        api_keys = await self.repository.list(
+        api_keys, total = await self.repository.list_and_count(
             ApiKeyModel.user_id == user_id,
             ApiKeyModel.deleted_at.is_(None),
+            LimitOffset(limit=limit, offset=offset),
+            OrderBy(field_name="created_at", sort_order="desc"),
         )
-        return list(api_keys)
+        return list(api_keys), total
 
     async def validate_api_key(self, api_key: str) -> ApiKeyModel | None:
         """

@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import Field
 
 from rag_service.config import settings
-from rag_service.schema import BaseSchema
+from rag_service.schema import BaseSchema, PaginatedList
 from rag_service.users.models import Role
 
 
@@ -30,5 +30,5 @@ class User(BaseSchema):
     updated_at: datetime
 
 
-class UsersList(BaseSchema):
+class UsersList(PaginatedList):
     users: list[User]

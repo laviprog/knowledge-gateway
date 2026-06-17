@@ -242,6 +242,10 @@ are always unlimited.
 | Documents            | Upload, list, get, search, delete                   |
 | Chat completion logs | List with filters (user, model, status, date range) |
 
+Admin list endpoints (users, API keys, LLM models, documents, chat completion logs) are paginated
+via `limit` (1–100, default 50) and `offset` (default 0) query parameters and return `total`,
+`limit`, and `offset` alongside the items.
+
 ## Roadmap
 
 - [ ] Add summary usage endpoint for aggregate request, token, latency, and error metrics.
