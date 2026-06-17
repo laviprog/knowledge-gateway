@@ -14,6 +14,16 @@ class BaseSchema(BaseModel):
         return self.model_dump(exclude_none=exclude_none)
 
 
+class PaginatedList(BaseSchema):
+    """
+    Base schema for paginated list responses.
+    """
+
+    total: int
+    limit: int
+    offset: int
+
+
 class HealthCheck(BaseModel):
     """
     Health check schema to indicate service status and timestamp.

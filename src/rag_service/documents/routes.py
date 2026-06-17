@@ -21,6 +21,7 @@ from rag_service.exceptions.responses import (
     not_found_response,
     validation_error_response,
 )
+from rag_service.pagination import PaginationDep
 from rag_service.security.dependencies import AdminApiKeyDep
 from rag_service.utils import is_dev_env
 
@@ -41,10 +42,17 @@ router = APIRouter(prefix="/documents", tags=["Documents"], include_in_schema=is
 async def get_documents(
     admin_id: AdminApiKeyDep,
     document_service: DocumentServiceDep,
+    pagination: PaginationDep,
 ) -> DocumentsList:
-    document_models = await document_service.list_active()
+    document_models, total = await document_service.list_active(
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
     return DocumentsList(
         documents=[Document.model_validate(document_model) for document_model in document_models],
+        total=total,
+        limit=pagination.limit,
+        offset=pagination.offset,
     )
 
 

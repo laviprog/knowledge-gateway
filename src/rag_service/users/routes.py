@@ -10,6 +10,7 @@ from rag_service.exceptions.responses import (
     not_found_response,
     validation_error_response,
 )
+from rag_service.pagination import PaginationDep
 from rag_service.security.dependencies import AdminApiKeyDep
 from rag_service.users.dependencies import UserServiceDep
 from rag_service.users.schema import User, UserCreate, UsersList, UserUpdate
@@ -32,9 +33,18 @@ router = APIRouter(prefix="/users", tags=["Users"], include_in_schema=is_dev_env
 async def get_users(
     admin_id: AdminApiKeyDep,
     user_service: UserServiceDep,
+    pagination: PaginationDep,
 ) -> UsersList:
-    user_models = await user_service.list_active()
-    return UsersList(users=[User.model_validate(user_model) for user_model in user_models])
+    user_models, total = await user_service.list_active(
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
+    return UsersList(
+        users=[User.model_validate(user_model) for user_model in user_models],
+        total=total,
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
 
 
 @router.get(
@@ -183,8 +193,16 @@ async def get_api_keys(
     user_id: UUID,
     admin_id: AdminApiKeyDep,
     user_service: UserServiceDep,
+    pagination: PaginationDep,
 ) -> ApiKeysList:
-    api_key_models = await user_service.list_api_keys_for_user(user_id)
+    api_key_models, total = await user_service.list_api_keys_for_user(
+        user_id,
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
     return ApiKeysList(
         api_keys=[ApiKey.model_validate(api_key_model) for api_key_model in api_key_models],
+        total=total,
+        limit=pagination.limit,
+        offset=pagination.offset,
     )

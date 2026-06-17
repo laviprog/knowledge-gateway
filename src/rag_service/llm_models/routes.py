@@ -18,6 +18,7 @@ from rag_service.llm_models.schema import (
     OpenAIModel,
     OpenAIModelsList,
 )
+from rag_service.pagination import PaginationDep
 from rag_service.security.dependencies import AdminApiKeyDep, UserApiKeyDep
 from rag_service.utils import is_dev_env
 
@@ -41,9 +42,18 @@ models_router = APIRouter(prefix="/models", tags=["Models"])
 async def get_llm_models(
     admin_id: AdminApiKeyDep,
     llm_model_service: LlmModelServiceDep,
+    pagination: PaginationDep,
 ) -> LlmModelsList:
-    model_list = await llm_model_service.list_not_deleted()
-    return LlmModelsList(models=[LlmModel.model_validate(model) for model in model_list])
+    model_list, total = await llm_model_service.list_paginated(
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
+    return LlmModelsList(
+        models=[LlmModel.model_validate(model) for model in model_list],
+        total=total,
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
 
 
 @llm_models_router.get(

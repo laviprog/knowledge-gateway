@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help setup hooks compose-config build up down logs ps migrate migration-heads test check format
+.PHONY: help setup hooks compose-config build up down logs ps migrate migration-heads test coverage check format
 
 help:
 	@echo "Available targets:"
@@ -15,6 +15,7 @@ help:
 	@echo "  migrate         Apply database migrations"
 	@echo "  migration-heads Show Alembic migration heads"
 	@echo "  test            Run test suite"
+	@echo "  coverage        Run test suite with coverage report"
 	@echo "  check           Run linters and type checks"
 	@echo "  format          Auto-format code"
 
@@ -50,6 +51,9 @@ migration-heads:
 
 test:
 	uv run pytest -v
+
+coverage:
+	uv run pytest --cov --cov-report=term-missing
 
 check:
 	uv run ruff check && \

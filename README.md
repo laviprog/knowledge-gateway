@@ -3,9 +3,10 @@
 > A private LLM gateway with retrieval-augmented generation. OpenAI-compatible API, vector search
 > over your documents, and per-user rate limiting — all self-hosted.
 
-[![Tests](https://github.com/laviprog/rag-service/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/laviprog/rag-service/actions/workflows/tests.yml)
-[![Linting](https://github.com/laviprog/rag-service/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/laviprog/rag-service/actions/workflows/lint.yml)
-[![Type Checking](https://github.com/laviprog/rag-service/actions/workflows/typecheck.yml/badge.svg?branch=main)](https://github.com/laviprog/rag-service/actions/workflows/typecheck.yml)
+[![Tests](https://github.com/laviprog/knowledge-gateway/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/laviprog/knowledge-gateway/actions/workflows/tests.yml)
+[![Linting](https://github.com/laviprog/knowledge-gateway/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/laviprog/knowledge-gateway/actions/workflows/lint.yml)
+[![Type Checking](https://github.com/laviprog/knowledge-gateway/actions/workflows/typecheck.yml/badge.svg?branch=main)](https://github.com/laviprog/knowledge-gateway/actions/workflows/typecheck.yml)
+[![Coverage](https://raw.githubusercontent.com/laviprog/knowledge-gateway/python-coverage-comment-action-data/badge.svg)](https://htmlpreview.github.io/?https://github.com/laviprog/knowledge-gateway/blob/python-coverage-comment-action-data/htmlcov/index.html)
 
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
@@ -194,9 +195,14 @@ Admin and dev-only routes are included in the OpenAPI schema only when `ENV=dev`
 The test suite uses `pytest` with `anyio` for async tests and `httpx` for HTTP-level testing.
 
 ```bash
-make test    # run all tests
-make check   # lint + format check + type check
+make test      # run all tests
+make coverage  # run all tests with a coverage report
+make check     # lint + format check + type check
 ```
+
+CI runs the suite with coverage on every push and pull request; the
+[`python-coverage-comment-action`](https://github.com/py-cov-action/python-coverage-comment-action)
+posts a coverage summary on pull requests and refreshes the coverage badge above.
 
 Coverage areas:
 
@@ -241,6 +247,10 @@ are always unlimited.
 | LLM models           | Create, list, get, update, delete                   |
 | Documents            | Upload, list, get, search, delete                   |
 | Chat completion logs | List with filters (user, model, status, date range) |
+
+Admin list endpoints (users, API keys, LLM models, documents, chat completion logs) are paginated
+via `limit` (1–100, default 50) and `offset` (default 0) query parameters and return `total`,
+`limit`, and `offset` alongside the items.
 
 ## Roadmap
 
