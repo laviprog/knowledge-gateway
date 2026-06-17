@@ -11,7 +11,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 concurrency:
   group: tests-${{ github.ref }}
@@ -41,5 +42,10 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --all-groups
 
-      - name: Run tests
-        run: make test
+      - name: Run tests with coverage
+        run: make coverage
+
+      - name: Publish coverage report
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
