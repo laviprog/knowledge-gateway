@@ -79,5 +79,13 @@ class OpenAIChatClient:
                     prompt_tokens=prompt_tokens,
                     completion_tokens=completion_tokens,
                 )
+        # Transient failures that survived the SDK's automatic retries are surfaced as a
+        # provider-unavailable error (mapped to 503), not a generic 500.
         except openai.APITimeoutError as exc:
             raise ProviderTimeoutError("LLM request timed out") from exc
+        except openai.APIConnectionError as exc:
+            raise ProviderTimeoutError("LLM provider connection failed") from exc
+        except openai.APIStatusError as exc:
+            if exc.status_code >= 500:
+                raise ProviderTimeoutError("LLM provider returned a server error") from exc
+            raise

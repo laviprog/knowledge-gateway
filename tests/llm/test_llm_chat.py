@@ -97,3 +97,20 @@ def test_stream_chat_raises_provider_timeout() -> None:
 
     with pytest.raises(ProviderTimeoutError):
         asyncio.run(collect())
+
+
+def test_stream_chat_maps_connection_error_to_provider_timeout() -> None:
+    client = OpenAIChatClient()
+
+    class ConnectionErrorCompletions:
+        async def create(self, **kwargs):
+            raise openai.APIConnectionError(request=httpx.Request("POST", "http://test"))
+
+    fake = SimpleNamespace(chat=SimpleNamespace(completions=ConnectionErrorCompletions()))
+    client.client = fake  # ty: ignore[invalid-assignment]
+
+    async def collect():
+        return [chunk async for chunk in client.stream_chat(model="m", messages=[])]
+
+    with pytest.raises(ProviderTimeoutError):
+        asyncio.run(collect())

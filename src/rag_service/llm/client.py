@@ -16,6 +16,8 @@ def get_llm_client() -> AsyncOpenAI:
             # Some OpenAI-compatible servers require no key; the SDK still needs a non-empty value.
             api_key=settings.LLM_API_KEY or "not-needed",
             timeout=settings.LLM_TIMEOUT_SECONDS,
+            # Retries transient errors (connection, 408/409/429, 5xx) with exponential backoff.
+            max_retries=settings.LLM_MAX_RETRIES,
         )
 
     return _client

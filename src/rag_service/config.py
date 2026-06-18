@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     LLM_API_KEY: str | None = None
     LLM_EMBEDDING_MODEL: str
     LLM_TIMEOUT_SECONDS: float = 30
+    # Automatic retries with exponential backoff for transient provider errors
+    # (connection errors, 408/409/429, 5xx). Handled by the OpenAI SDK.
+    LLM_MAX_RETRIES: int = 2
 
     @property
     def _DB_URL_BASE(self) -> str:

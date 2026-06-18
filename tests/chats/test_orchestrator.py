@@ -13,6 +13,7 @@ from rag_service.chats.services import (
     ChatCompletionTimeoutError,
 )
 from rag_service.exceptions import BadRequestError, NotFoundError
+from rag_service.llm.base import ProviderTimeoutError
 
 if TYPE_CHECKING:
     from rag_service.chats.schema import ChatCompletionRequest
@@ -139,6 +140,32 @@ def test_prepare_maps_not_found_to_404() -> None:
     assert result.status_code == 404
     assert result.code == "model_not_found"
     assert log_service.error_codes == ["model_not_found"]
+
+
+def test_prepare_maps_provider_timeout_to_503_and_finalizes_log() -> None:
+    orchestrator, log_service = build_orchestrator(
+        FakeCompletionService(prepare_exc=ProviderTimeoutError("LLM request timed out"))
+    )
+
+    result = asyncio.run(_prepare(orchestrator))
+
+    assert isinstance(result, ChatCompletionError)
+    assert result.status_code == 503
+    assert result.code == "provider_timeout"
+    assert log_service.calls == ["create_pending", "finish_failed"]
+
+
+def test_prepare_finalizes_log_on_unexpected_error_and_reraises() -> None:
+    orchestrator, log_service = build_orchestrator(
+        FakeCompletionService(prepare_exc=RuntimeError("qdrant down"))
+    )
+
+    with pytest.raises(RuntimeError, match="qdrant down"):
+        asyncio.run(_prepare(orchestrator))
+
+    # Log row is finalized as FAILED rather than left PENDING.
+    assert log_service.calls == ["create_pending", "finish_failed"]
+    assert log_service.error_codes == ["preparation_failed"]
 
 
 def test_complete_success_returns_response_and_finishes() -> None:
