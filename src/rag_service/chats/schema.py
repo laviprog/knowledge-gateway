@@ -108,4 +108,29 @@ class ChatCompletionRequestLogsList(BaseSchema):
     offset: int
 
 
+class ChatCompletionStatusCount(BaseSchema):
+    status: ChatCompletionRequestStatus
+    count: int
+
+
+class ChatCompletionModelStats(BaseSchema):
+    model_public_id: str
+    requests: int
+    total_tokens: int | None
+    avg_total_ms: float | None
+
+
+class ChatCompletionStats(BaseSchema):
+    total_requests: int
+    by_status: list[ChatCompletionStatusCount]
+    prompt_tokens_total: int | None
+    completion_tokens_total: int | None
+    total_tokens_total: int | None
+    avg_embedding_ms: float | None
+    avg_llm_ttfb_ms: float | None
+    avg_llm_generation_ms: float | None
+    avg_total_ms: float | None
+    by_model: list[ChatCompletionModelStats]
+
+
 OpenAIChunk = dict[str, Any]
