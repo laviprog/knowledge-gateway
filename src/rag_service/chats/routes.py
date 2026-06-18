@@ -81,7 +81,11 @@ async def create_chat_completion(
         return error_to_response(prepared)
 
     if chat_request.stream:
-        return StreamingResponse(orchestrator.stream(prepared), media_type="text/event-stream")
+        return StreamingResponse(
+            orchestrator.stream(prepared),
+            media_type="text/event-stream",
+            headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache"},
+        )
 
     completed = await orchestrator.complete(prepared)
     if isinstance(completed, ChatCompletionError):
