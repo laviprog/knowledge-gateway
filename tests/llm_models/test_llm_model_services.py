@@ -78,7 +78,7 @@ def create_model(model_id: UUID | None = None) -> LlmModel:
     return LlmModel(
         id=model_id or uuid4(),
         public_id="rag-assistant-lite",
-        provider="ollama",
+        provider="openai",
         provider_model="llama3.1:8b",
         context_window_tokens=8192,
         max_completion_tokens=1024,
@@ -100,7 +100,7 @@ def test_create_model_creates_llm_model() -> None:
     )
 
     assert model.public_id == "rag-assistant-lite"
-    assert model.provider == "ollama"
+    assert model.provider == "openai"
     assert model.provider_model == "llama3.1:8b"
 
 

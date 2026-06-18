@@ -8,7 +8,7 @@ from rag_service.schema import BaseSchema, PaginatedList
 
 class LlmModelCreate(BaseSchema):
     public_id: str = Field(min_length=1, max_length=255)
-    provider: str = Field(default="ollama", min_length=1, max_length=50)
+    provider: str = Field(default="openai", min_length=1, max_length=50)
     provider_model: str = Field(min_length=1, max_length=255)
     context_window_tokens: int = Field(gt=0)
     max_completion_tokens: int = Field(gt=0)
