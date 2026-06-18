@@ -25,10 +25,12 @@ class QdrantVectorStore:
 
     async def ensure_collection(self, vector_size: int) -> None:
         """
-        Create collection when it does not exist.
+        Create collection when it does not exist, or verify an existing one matches the
+        embedding dimension.
         """
         collection_exists = await self.client.collection_exists(self.collection_name)
         if collection_exists:
+            await self._assert_dimension(vector_size)
             return
 
         await self.client.create_collection(
@@ -43,6 +45,23 @@ class QdrantVectorStore:
             collection=self.collection_name,
             vector_size=vector_size,
         )
+
+    async def _assert_dimension(self, vector_size: int) -> None:
+        """
+        Fail loudly when the existing collection's vector size differs from the embedding
+        dimension (e.g. after changing ``LLM_EMBEDDING_MODEL`` without re-indexing).
+        """
+        info = await self.client.get_collection(self.collection_name)
+        vectors = info.config.params.vectors
+        existing_size = vectors.size if isinstance(vectors, VectorParams) else None
+
+        if existing_size is not None and existing_size != vector_size:
+            raise ValueError(
+                f"Embedding dimension mismatch: Qdrant collection "
+                f"'{self.collection_name}' has vector size {existing_size}, but the "
+                f"configured embedding model produces {vector_size}. Recreate the "
+                f"collection and re-index documents after changing LLM_EMBEDDING_MODEL."
+            )
 
     async def upsert_chunks(
         self,
