@@ -64,10 +64,10 @@
         <p class="text">
             <a id="prevFileLink" class="nav" href="z_427b7c4c7ef1c0ff_schema_py.html">&#xab; prev</a> &nbsp; &nbsp;
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
-            <a id="nextFileLink" class="nav" href="z_7e68197b3c03a2f9_dependencies_py.html">&#xbb; next</a>
+            <a id="nextFileLink" class="nav" href="z_ad780fbca83cf68f_base_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.1">coverage.py v7.14.1</a>,
-            created at 2026-06-17 10:41 +0000
+            created at 2026-06-18 14:45 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -87,8 +87,8 @@
     <p class="run"><span class="n"><a id="t3" href="#t3">3</a></span><span class="t"><span class="key">from</span> <span class="nam">fastapi</span> <span class="key">import</span> <span class="nam">FastAPI</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t4" href="#t4">4</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t5" href="#t5">5</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">bootstrap</span> <span class="key">import</span> <span class="nam">create_default_admin</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t6" href="#t6">6</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">log_config</span> <span class="key">import</span> <span class="nam">get_log</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t7" href="#t7">7</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">ollama</span><span class="op">.</span><span class="nam">client</span> <span class="key">import</span> <span class="nam">close_ollama_client</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t6" href="#t6">6</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">llm</span><span class="op">.</span><span class="nam">client</span> <span class="key">import</span> <span class="nam">close_llm_client</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t7" href="#t7">7</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">log_config</span> <span class="key">import</span> <span class="nam">get_log</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t8" href="#t8">8</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">qdrant</span><span class="op">.</span><span class="nam">client</span> <span class="key">import</span> <span class="nam">close_qdrant_client</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t9" href="#t9">9</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">redis</span><span class="op">.</span><span class="nam">client</span> <span class="key">import</span> <span class="nam">close_redis_pool</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t10" href="#t10">10</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -102,7 +102,7 @@
     <p class="mis show_mis"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t">    <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t">        <span class="key">yield</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t">    <span class="key">finally</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t">        <span class="key">await</span> <span class="nam">close_ollama_client</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t">        <span class="key">await</span> <span class="nam">close_llm_client</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t22" href="#t22">22</a></span><span class="t">        <span class="key">await</span> <span class="nam">close_qdrant_client</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t23" href="#t23">23</a></span><span class="t">        <span class="key">await</span> <span class="nam">close_redis_pool</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t24" href="#t24">24</a></span><span class="t">        <span class="nam">log</span><span class="op">.</span><span class="nam">info</span><span class="op">(</span><span class="str">"Application shut down"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -112,10 +112,10 @@
         <p>
             <a class="nav" href="z_427b7c4c7ef1c0ff_schema_py.html">&#xab; prev</a> &nbsp; &nbsp;
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
-            <a class="nav" href="z_7e68197b3c03a2f9_dependencies_py.html">&#xbb; next</a>
+            <a class="nav" href="z_ad780fbca83cf68f_base_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.1">coverage.py v7.14.1</a>,
-            created at 2026-06-17 10:41 +0000
+            created at 2026-06-18 14:45 +0000
         </p>
     </div>
 </footer>

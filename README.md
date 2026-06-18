@@ -19,10 +19,10 @@
 | src/rag\_service/chats/prompts.py                       |       38 |        5 |       16 |        5 |     81% |67, 75, 79, 84, 87 |
 | src/rag\_service/chats/repositories.py                  |        4 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/chats/routes.py                        |       65 |       39 |        6 |        1 |     38% |67-179, 206-216 |
-| src/rag\_service/chats/schema.py                        |       37 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/chats/services.py                      |      191 |       72 |       52 |        4 |     60% |178, 232, 244-251, 272, 281-288, 299-\>306, 428-438, 449-450, 462-467, 481-491, 502-507, 524-551, 558-566, 573-578, 585-589 |
+| src/rag\_service/chats/schema.py                        |       36 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/chats/services.py                      |      192 |       72 |       52 |        4 |     60% |179, 233, 245-252, 273, 282-289, 300-\>307, 428-438, 449-450, 462-467, 481-491, 502-507, 524-551, 558-566, 573-578, 585-589 |
 | src/rag\_service/chats/sse.py                           |       10 |        0 |        2 |        0 |    100% |           |
-| src/rag\_service/config.py                              |       33 |        1 |        0 |        0 |     97% |        70 |
+| src/rag\_service/config.py                              |       31 |        1 |        0 |        0 |     97% |        69 |
 | src/rag\_service/database/\_\_init\_\_.py               |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/database/base\_model.py                |        5 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/database/config.py                     |        4 |        0 |        0 |        0 |    100% |           |
@@ -46,6 +46,11 @@
 | src/rag\_service/exceptions/responses.py                |       11 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/exceptions/schema.py                   |        4 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/lifecycle.py                           |       18 |        8 |        0 |        0 |     56% |     16-24 |
+| src/rag\_service/llm/\_\_init\_\_.py                    |        0 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/llm/base.py                            |        7 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/llm/chat.py                            |       33 |        1 |       12 |        1 |     96% |        37 |
+| src/rag\_service/llm/client.py                          |       12 |        1 |        4 |        1 |     88% |        30 |
+| src/rag\_service/llm/embeddings.py                      |       11 |        4 |        2 |        0 |     54% |     18-25 |
 | src/rag\_service/llm\_models/\_\_init\_\_.py            |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/llm\_models/dependencies.py            |        9 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/llm\_models/models.py                  |       11 |        0 |        0 |        0 |    100% |           |
@@ -56,10 +61,6 @@
 | src/rag\_service/log\_config.py                         |       44 |        3 |        2 |        1 |     91% |42, 110, 135 |
 | src/rag\_service/main.py                                |       14 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/middlewares.py                         |       29 |        3 |        4 |        1 |     88% |41-47, 53-\>57 |
-| src/rag\_service/ollama/\_\_init\_\_.py                 |        0 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/ollama/chat.py                         |       26 |       14 |        8 |        0 |     35% | 36, 50-79 |
-| src/rag\_service/ollama/client.py                       |       16 |        1 |        6 |        3 |     82% |14-\>24, 16-\>19, 33 |
-| src/rag\_service/ollama/embeddings.py                   |       11 |        4 |        2 |        0 |     54% |     18-26 |
 | src/rag\_service/pagination.py                          |        9 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/qdrant/\_\_init\_\_.py                 |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/qdrant/client.py                       |       12 |        1 |        4 |        2 |     81% |13-\>19, 28 |
@@ -81,7 +82,7 @@
 | src/rag\_service/users/schema.py                        |       16 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/users/services.py                      |       58 |       38 |       14 |        0 |     28% |20-21, 27-32, 43, 61-79, 92-106, 112-120, 131-141, 152-153, 159-167 |
 | src/rag\_service/utils.py                               |       11 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                               | **1577** |  **390** |  **224** |   **28** | **71%** |           |
+| **TOTAL**                                               | **1585** |  **377** |  **226** |   **27** | **73%** |           |
 
 
 ## Setup coverage badge
