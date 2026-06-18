@@ -12,9 +12,12 @@ from rag_service.documents.repositories import DocumentChunkRepository, Document
 from rag_service.documents.utils import hash_content, split_document_content
 from rag_service.exceptions import NotFoundError
 from rag_service.llm.embeddings import OpenAIEmbeddingClient
+from rag_service.log_config import get_log
 from rag_service.qdrant.schema import VectorSearchResult
 from rag_service.qdrant.vector_store import QdrantVectorStore
 from rag_service.utils import utc_now
+
+log = get_log(__name__)
 
 
 @dataclass(frozen=True)
@@ -85,6 +88,14 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
         await self.create_chunks_for_document(document)
         await self.repository.session.commit()
 
+        log.info(
+            "Document created",
+            document_id=str(document.id),
+            title=document.title,
+            content_hash=document.content_hash,
+            chunks_count=len(document.chunks),
+            source=source,
+        )
         return document
 
     async def create_chunks_for_document(self, document: DocumentModel) -> list[DocumentChunkModel]:
@@ -120,12 +131,24 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
         if not chunks:
             return
 
+        embedding_start = time.perf_counter()
         embeddings = await self.embedding_client.embed_texts([chunk.content for chunk in chunks])
+        embedding_ms = round((time.perf_counter() - embedding_start) * 1000, 2)
+
+        upsert_start = time.perf_counter()
         point_ids = await self.vector_store.upsert_chunks(chunks, embeddings)
+        upsert_ms = round((time.perf_counter() - upsert_start) * 1000, 2)
 
         for chunk, point_id in zip(chunks, point_ids, strict=True):
             chunk.qdrant_point_id = point_id
             await self.chunk_repository.update(chunk, auto_commit=False)
+
+        log.debug(
+            "Indexed chunks",
+            chunks_count=len(chunks),
+            embedding_ms=embedding_ms,
+            upsert_ms=upsert_ms,
+        )
 
     async def index_document(self, document_id: UUID) -> None:
         """
@@ -136,6 +159,9 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
         document.index_error = None
         document.indexed_at = None
         await self.repository.update(document, auto_commit=True)
+
+        log.info("Document indexing started", document_id=str(document_id))
+        started_at = time.perf_counter()
 
         try:
             chunks = await self.chunk_repository.list(
@@ -148,11 +174,25 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
             document.index_error = None
             document.indexed_at = utc_now()
             await self.repository.update(document, auto_commit=True)
+
+            log.info(
+                "Document indexed",
+                document_id=str(document_id),
+                chunks_count=len(chunks),
+                duration_ms=round((time.perf_counter() - started_at) * 1000, 2),
+            )
         except Exception as exc:
             document.index_status = DocumentIndexStatus.FAILED
             document.index_error = str(exc)[:1000]
             document.indexed_at = None
             await self.repository.update(document, auto_commit=True)
+
+            log.warning(
+                "Document indexing failed",
+                document_id=str(document_id),
+                error=str(exc)[:200],
+                duration_ms=round((time.perf_counter() - started_at) * 1000, 2),
+            )
             raise
 
     async def search_documents(self, query: str, limit: int) -> list[VectorSearchResult]:
@@ -183,14 +223,23 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
         )
         qdrant_search_ms = round((time.perf_counter() - qdrant_start) * 1000, 2)
 
-        return DocumentSearchWithMetrics(
-            results=search_results,
-            timings=DocumentSearchTimings(
-                embedding_ms=embedding_ms,
-                qdrant_search_ms=qdrant_search_ms,
-                total_ms=round((time.perf_counter() - total_start) * 1000, 2),
-            ),
+        timings = DocumentSearchTimings(
+            embedding_ms=embedding_ms,
+            qdrant_search_ms=qdrant_search_ms,
+            total_ms=round((time.perf_counter() - total_start) * 1000, 2),
         )
+
+        log.debug(
+            "Document search completed",
+            query_length=len(query),
+            limit=limit,
+            results_count=len(search_results),
+            embedding_ms=timings.embedding_ms,
+            qdrant_search_ms=timings.qdrant_search_ms,
+            total_ms=timings.total_ms,
+        )
+
+        return DocumentSearchWithMetrics(results=search_results, timings=timings)
 
     async def delete_document(self, document_id: UUID) -> None:
         """
@@ -215,6 +264,13 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
             await self.chunk_repository.update(chunk, auto_commit=False)
 
         await self.repository.session.commit()
+
+        log.info(
+            "Document deleted",
+            document_id=str(document_id),
+            chunks_count=len(chunks),
+            qdrant_points_removed=len(qdrant_point_ids),
+        )
 
     async def get_by_id_or_raise(self, document_id: UUID) -> DocumentModel:
         """

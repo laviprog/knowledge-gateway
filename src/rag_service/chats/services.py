@@ -2,7 +2,7 @@ import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
@@ -26,8 +26,11 @@ from .prompts import build_rag_messages, get_latest_user_message
 from .schema import (
     ChatCompletionChoice,
     ChatCompletionMessage,
+    ChatCompletionModelStats,
     ChatCompletionRequest,
     ChatCompletionResponse,
+    ChatCompletionStats,
+    ChatCompletionStatusCount,
     ChatCompletionUsage,
 )
 from .sse import build_chunk, build_usage_chunk, format_sse_event
@@ -521,19 +524,14 @@ class ChatCompletionRequestLogService(
         """
         List usage log rows with basic admin filters.
         """
-        filters: list[ColumnElement[bool]] = [ChatCompletionRequestLogModel.deleted_at.is_(None)]
-        if user_id is not None:
-            filters.append(ChatCompletionRequestLogModel.user_id == user_id)
-        if api_key_id is not None:
-            filters.append(ChatCompletionRequestLogModel.api_key_id == api_key_id)
-        if model is not None:
-            filters.append(ChatCompletionRequestLogModel.model_public_id == model)
-        if status is not None:
-            filters.append(ChatCompletionRequestLogModel.status == status)
-        if date_from is not None:
-            filters.append(ChatCompletionRequestLogModel.created_at >= date_from)
-        if date_to is not None:
-            filters.append(ChatCompletionRequestLogModel.created_at <= date_to)
+        filters = self._build_filters(
+            user_id=user_id,
+            api_key_id=api_key_id,
+            model=model,
+            status=status,
+            date_from=date_from,
+            date_to=date_to,
+        )
 
         statement = (
             select(ChatCompletionRequestLogModel)
@@ -549,6 +547,112 @@ class ChatCompletionRequestLogService(
         result = await self.repository.session.execute(statement)
         count_result = await self.repository.session.execute(count_statement)
         return list(result.scalars().all()), count_result.scalar_one()
+
+    async def get_stats(
+        self,
+        *,
+        user_id: UUID | None = None,
+        api_key_id: UUID | None = None,
+        model: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+    ) -> ChatCompletionStats:
+        """
+        Aggregate usage metrics (totals, token sums/averages, latency averages) over the
+        filtered usage-log rows, plus a per-model breakdown.
+        """
+        model_cls = ChatCompletionRequestLogModel
+        filters = self._build_filters(
+            user_id=user_id,
+            api_key_id=api_key_id,
+            model=model,
+            status=None,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        session = self.repository.session
+
+        totals_statement = select(
+            func.count(),
+            func.sum(model_cls.prompt_tokens),
+            func.sum(model_cls.completion_tokens),
+            func.sum(model_cls.total_tokens),
+            func.avg(model_cls.embedding_ms),
+            func.avg(model_cls.llm_ttfb_ms),
+            func.avg(model_cls.llm_generation_ms),
+            func.avg(model_cls.total_ms),
+        ).where(*filters)
+        totals_row = (await session.execute(totals_statement)).one()
+
+        status_statement = (
+            select(model_cls.status, func.count()).where(*filters).group_by(model_cls.status)
+        )
+        status_rows = (await session.execute(status_statement)).all()
+
+        model_statement = (
+            select(
+                model_cls.model_public_id,
+                func.count(),
+                func.sum(model_cls.total_tokens),
+                func.avg(model_cls.total_ms),
+            )
+            .where(*filters)
+            .group_by(model_cls.model_public_id)
+            .order_by(func.count().desc())
+        )
+        model_rows = (await session.execute(model_statement)).all()
+
+        return ChatCompletionStats(
+            total_requests=totals_row[0],
+            by_status=[
+                ChatCompletionStatusCount(status=status, count=count)
+                for status, count in status_rows
+            ],
+            prompt_tokens_total=_as_int(totals_row[1]),
+            completion_tokens_total=_as_int(totals_row[2]),
+            total_tokens_total=_as_int(totals_row[3]),
+            avg_embedding_ms=_round_or_none(totals_row[4]),
+            avg_llm_ttfb_ms=_round_or_none(totals_row[5]),
+            avg_llm_generation_ms=_round_or_none(totals_row[6]),
+            avg_total_ms=_round_or_none(totals_row[7]),
+            by_model=[
+                ChatCompletionModelStats(
+                    model_public_id=model_public_id,
+                    requests=requests,
+                    total_tokens=_as_int(total_tokens),
+                    avg_total_ms=_round_or_none(avg_total_ms),
+                )
+                for model_public_id, requests, total_tokens, avg_total_ms in model_rows
+            ],
+        )
+
+    @staticmethod
+    def _build_filters(
+        *,
+        user_id: UUID | None,
+        api_key_id: UUID | None,
+        model: str | None,
+        status: ChatCompletionRequestStatus | None,
+        date_from: datetime | None,
+        date_to: datetime | None,
+    ) -> "list[ColumnElement[bool]]":
+        """
+        Build shared WHERE clauses for usage-log queries.
+        """
+        filters: list[ColumnElement[bool]] = [ChatCompletionRequestLogModel.deleted_at.is_(None)]
+        if user_id is not None:
+            filters.append(ChatCompletionRequestLogModel.user_id == user_id)
+        if api_key_id is not None:
+            filters.append(ChatCompletionRequestLogModel.api_key_id == api_key_id)
+        if model is not None:
+            filters.append(ChatCompletionRequestLogModel.model_public_id == model)
+        if status is not None:
+            filters.append(ChatCompletionRequestLogModel.status == status)
+        if date_from is not None:
+            filters.append(ChatCompletionRequestLogModel.created_at >= date_from)
+        if date_to is not None:
+            filters.append(ChatCompletionRequestLogModel.created_at <= date_to)
+        return filters
 
     @staticmethod
     def apply_plan(
@@ -587,3 +691,17 @@ def get_query_length(chat_request: ChatCompletionRequest) -> int | None:
             return len(message.content)
 
     return None
+
+
+def _as_int(value: Any) -> int | None:
+    """
+    Coerce a SQL aggregate (which may be Decimal/None) to an int.
+    """
+    return int(value) if value is not None else None
+
+
+def _round_or_none(value: Any) -> float | None:
+    """
+    Coerce a SQL average (which may be Decimal/None) to a rounded float.
+    """
+    return round(float(value), 2) if value is not None else None

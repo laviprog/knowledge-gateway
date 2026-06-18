@@ -4,11 +4,14 @@ from qdrant_client.models import Distance, PointIdsList, PointStruct, VectorPara
 
 from rag_service.config import settings
 from rag_service.documents.models import DocumentChunkModel
+from rag_service.log_config import get_log
 from rag_service.qdrant.client import get_qdrant_client
 from rag_service.qdrant.schema import VectorSearchResult
 
 if TYPE_CHECKING:
     from uuid import UUID
+
+log = get_log(__name__)
 
 
 class QdrantVectorStore:
@@ -34,6 +37,11 @@ class QdrantVectorStore:
                 size=vector_size,
                 distance=Distance.COSINE,
             ),
+        )
+        log.info(
+            "Created Qdrant collection",
+            collection=self.collection_name,
+            vector_size=vector_size,
         )
 
     async def upsert_chunks(
@@ -73,6 +81,11 @@ class QdrantVectorStore:
             points=points,
             wait=True,
         )
+        log.debug(
+            "Upserted points into Qdrant",
+            collection=self.collection_name,
+            points_count=len(point_ids),
+        )
 
         return point_ids
 
@@ -89,6 +102,11 @@ class QdrantVectorStore:
             points_selector=PointIdsList(points=points),
             wait=True,
         )
+        log.debug(
+            "Deleted points from Qdrant",
+            collection=self.collection_name,
+            points_count=len(point_ids),
+        )
 
     async def search(
         self,
@@ -100,6 +118,10 @@ class QdrantVectorStore:
         """
         collection_exists = await self.client.collection_exists(self.collection_name)
         if not collection_exists:
+            log.debug(
+                "Qdrant search skipped: collection does not exist",
+                collection=self.collection_name,
+            )
             return []
 
         response = await self.client.query_points(
@@ -123,4 +145,10 @@ class QdrantVectorStore:
                 )
             )
 
+        log.debug(
+            "Qdrant search completed",
+            collection=self.collection_name,
+            limit=limit,
+            results_count=len(results),
+        )
         return results
