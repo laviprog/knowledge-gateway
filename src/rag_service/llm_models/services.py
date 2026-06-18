@@ -37,7 +37,7 @@ class LlmModelService(SQLAlchemyAsyncRepositoryService[LlmModel, LlmModelReposit
         provider_model: str,
         context_window_tokens: int,
         max_completion_tokens: int,
-        provider: str = "ollama",
+        provider: str = "openai",
         description: str | None = None,
     ) -> LlmModel:
         """

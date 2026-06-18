@@ -47,12 +47,11 @@ class Settings(BaseSettings):
     QDRANT_API_KEY: str
     QDRANT_COLLECTION_NAME: str = "global_knowledge_base"
 
-    # Ollama configuration
-    OLLAMA_BASE_URL: str
-    OLLAMA_API_KEY: str | None = None
-    OLLAMA_EMBEDDING_MODEL: str = "embeddinggemma"
-    OLLAMA_TIMEOUT_SECONDS: float = 30
-    OLLAMA_KEEP_ALIVE: str = "24h"
+    # LLM provider configuration (OpenAI-compatible endpoint)
+    LLM_BASE_URL: str
+    LLM_API_KEY: str | None = None
+    LLM_EMBEDDING_MODEL: str
+    LLM_TIMEOUT_SECONDS: float = 30
 
     @property
     def _DB_URL_BASE(self) -> str:

@@ -36,9 +36,9 @@ def test_build_rag_messages_adds_context_to_system_message() -> None:
         )
     ]
 
-    ollama_messages = build_rag_messages(messages, chunks)
+    messages = build_rag_messages(messages, chunks)
 
-    assert ollama_messages[0]["role"] == "system"
-    assert "Be concise." in ollama_messages[0]["content"]
-    assert "Returns are available within 14 days." in ollama_messages[0]["content"]
-    assert ollama_messages[1] == {"role": "user", "content": "How do returns work?"}
+    assert messages[0]["role"] == "system"
+    assert "Be concise." in messages[0]["content"]
+    assert "Returns are available within 14 days." in messages[0]["content"]
+    assert messages[1] == {"role": "user", "content": "How do returns work?"}

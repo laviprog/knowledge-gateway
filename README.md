@@ -16,7 +16,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white)
 ![Qdrant](https://img.shields.io/badge/Qdrant-1.17+-FF4500?logo=qdrant&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7+-DC382D?logo=redis&logoColor=white)
-![Ollama](https://img.shields.io/badge/Ollama-0.22+-000000?logo=ollama&logoColor=white)
+![OpenAI SDK](https://img.shields.io/badge/OpenAI_SDK-compatible-412991?logo=openai&logoColor=white)
 
 ## Table of Contents
 
@@ -70,7 +70,7 @@ The service has three main responsibilities:
 | **PostgreSQL** | Users, API keys, model records, documents, chunks, and usage logs |
 | **Qdrant**     | Vector points for document chunks (semantic search)               |
 | **Redis**      | Sliding-window rate limit counters (per-user sorted sets)         |
-| **Ollama**     | Embedding and chat model inference                                |
+| **LLM API**    | Embedding and chat model inference (any OpenAI-compatible API)    |
 
 ## Getting Started
 
@@ -78,8 +78,9 @@ The service has three main responsibilities:
 
 - Docker and Docker Compose
 - `uv` for local development
-- Ollama running and reachable at `OLLAMA_BASE_URL` with the following models pulled:
-    - the embedding model set by `OLLAMA_EMBEDDING_MODEL` (default: `embeddinggemma`)
+- An OpenAI-compatible API reachable at `LLM_BASE_URL` (OpenAI, Azure OpenAI, vLLM, Ollama's `/v1`,
+  etc.) that serves:
+    - the embedding model set by `LLM_EMBEDDING_MODEL`
     - any chat models you plan to register in `llm_models`
 
 ### Quick Start
@@ -88,7 +89,7 @@ The service has three main responsibilities:
 # 1. Clone and configure
 cp .env.example .env
 # Edit .env — at minimum set: POSTGRES_PASSWORD, QDRANT_API_KEY, API_KEY_PEPPER,
-#             BOOTSTRAP_ADMIN_API_KEY, and OLLAMA_BASE_URL
+#             BOOTSTRAP_ADMIN_API_KEY, LLM_BASE_URL, and LLM_EMBEDDING_MODEL
 
 # 2. Build and start all services
 make build
@@ -129,7 +130,8 @@ template with comments.
 | `POSTGRES_*`      | PostgreSQL connection settings (`HOST`, `PORT`, `DB`, `USER`, `PASSWORD`)                                                         |
 | `QDRANT_URL`      | Qdrant service URL                                                                                                                |
 | `QDRANT_API_KEY`  | Qdrant authentication key                                                                                                         |
-| `OLLAMA_BASE_URL` | Ollama service URL (use `host.docker.internal` to reach a local Ollama from inside Docker)                                        |
+| `LLM_BASE_URL`    | OpenAI-compatible API base URL (e.g. `https://api.openai.com/v1`, or `.../v1` for Ollama/vLLM)                                    |
+| `LLM_EMBEDDING_MODEL` | Embedding model used for chunk indexing and query encoding (must match the Qdrant collection's vector size)                   |
 
 **Optional / with defaults:**
 
@@ -141,9 +143,8 @@ template with comments.
 | `RATE_LIMIT_DEFAULT_REQUESTS_PER_MINUTE` | `60`                    | Default rate limit for new users (`0` = unlimited)                  |
 | `TRUSTED_PROXY_IPS`                      | _(empty)_               | Comma-separated IPs whose `X-Forwarded-For` header is trusted       |
 | `QDRANT_COLLECTION_NAME`                 | `global_knowledge_base` | Qdrant collection for document chunks                               |
-| `OLLAMA_EMBEDDING_MODEL`                 | `embeddinggemma`        | Embedding model for chunk indexing and query encoding               |
-| `OLLAMA_TIMEOUT_SECONDS`                 | `30`                    | Timeout for Ollama chat requests                                    |
-| `OLLAMA_KEEP_ALIVE`                      | `24h`                   | Duration Ollama keeps the model loaded between requests             |
+| `LLM_API_KEY`                            | _(empty)_               | API key sent to the LLM provider (optional for keyless local servers) |
+| `LLM_TIMEOUT_SECONDS`                    | `30`                    | Timeout for LLM chat and embedding requests                         |
 | `BOOTSTRAP_ADMIN_NAME`                   | `default_admin`         | Username for the auto-created admin account                         |
 | `BOOTSTRAP_ADMIN_API_KEY_NAME`           | `admin1`                | API key name for the bootstrap admin key                            |
 | `BOOTSTRAP_ADMIN_API_KEY`                | _(auto-generated)_      | Fixed bootstrap admin key — if unset, a key is generated and logged |

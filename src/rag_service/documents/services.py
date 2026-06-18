@@ -11,7 +11,7 @@ from rag_service.documents.models import DocumentChunkModel, DocumentIndexStatus
 from rag_service.documents.repositories import DocumentChunkRepository, DocumentRepository
 from rag_service.documents.utils import hash_content, split_document_content
 from rag_service.exceptions import NotFoundError
-from rag_service.ollama.embeddings import OllamaEmbeddingClient
+from rag_service.llm.embeddings import OpenAIEmbeddingClient
 from rag_service.qdrant.schema import VectorSearchResult
 from rag_service.qdrant.vector_store import QdrantVectorStore
 from rag_service.utils import utc_now
@@ -23,7 +23,7 @@ class DocumentSearchTimings:
     Document search timings.
     """
 
-    ollama_embedding_ms: float
+    embedding_ms: float
     qdrant_search_ms: float
     total_ms: float
 
@@ -46,7 +46,7 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
     def __init__(self, session, **kwargs):
         super().__init__(session=session, **kwargs)
         self.chunk_repository = DocumentChunkRepository(session=session)
-        self.embedding_client = OllamaEmbeddingClient()
+        self.embedding_client = OpenAIEmbeddingClient()
         self.vector_store = QdrantVectorStore()
 
     async def list_active(self, limit: int, offset: int) -> tuple[list[DocumentModel], int]:
@@ -174,7 +174,7 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
 
         embedding_start = time.perf_counter()
         embeddings = await self.embedding_client.embed_texts([query])
-        ollama_embedding_ms = round((time.perf_counter() - embedding_start) * 1000, 2)
+        embedding_ms = round((time.perf_counter() - embedding_start) * 1000, 2)
 
         qdrant_start = time.perf_counter()
         search_results = await self.vector_store.search(
@@ -186,7 +186,7 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
         return DocumentSearchWithMetrics(
             results=search_results,
             timings=DocumentSearchTimings(
-                ollama_embedding_ms=ollama_embedding_ms,
+                embedding_ms=embedding_ms,
                 qdrant_search_ms=qdrant_search_ms,
                 total_ms=round((time.perf_counter() - total_start) * 1000, 2),
             ),
