@@ -18,5 +18,5 @@ def test_chat_completion_request_ignores_unknown_fields() -> None:
     assert request.stream is True
     assert request.stream_options is not None
     assert request.stream_options.include_usage is True
-    assert request.think == "low"
+    assert not hasattr(request, "think")
     assert not hasattr(request, "metadata")

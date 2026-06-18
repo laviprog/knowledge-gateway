@@ -72,10 +72,10 @@ class ChatCompletionRequestLogModel(BaseModel):
 
     chunks_count: Mapped[int | None]
     retrieval_total_ms: Mapped[float | None] = mapped_column(Float)
-    ollama_embedding_ms: Mapped[float | None] = mapped_column(Float)
+    embedding_ms: Mapped[float | None] = mapped_column(Float)
     qdrant_search_ms: Mapped[float | None] = mapped_column(Float)
-    ollama_ttfb_ms: Mapped[float | None] = mapped_column(Float)
-    ollama_generation_ms: Mapped[float | None] = mapped_column(Float)
+    llm_ttfb_ms: Mapped[float | None] = mapped_column(Float)
+    llm_generation_ms: Mapped[float | None] = mapped_column(Float)
     total_ms: Mapped[float | None] = mapped_column(Float)
 
     messages_count: Mapped[int | None]

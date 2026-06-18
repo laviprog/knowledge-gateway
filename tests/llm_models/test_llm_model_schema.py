@@ -11,7 +11,7 @@ def test_llm_model_schema_validates_model() -> None:
     model = LlmModel(
         id=uuid4(),
         public_id="rag-assistant-lite",
-        provider="ollama",
+        provider="openai",
         provider_model="llama3.1:8b",
         context_window_tokens=8192,
         max_completion_tokens=1024,
@@ -23,7 +23,7 @@ def test_llm_model_schema_validates_model() -> None:
     schema = LlmModelSchema.model_validate(model)
 
     assert schema.public_id == "rag-assistant-lite"
-    assert schema.provider == "ollama"
+    assert schema.provider == "openai"
     assert schema.provider_model == "llama3.1:8b"
 
 

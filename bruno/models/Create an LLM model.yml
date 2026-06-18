@@ -11,7 +11,7 @@ http:
     data: |-
       {
         "public_id": "assistant_lite",
-        "provider": "ollama",
+        "provider": "openai",
         "provider_model": "gemma4:e4b",
         "context_window_tokens": 128000,
         "max_completion_tokens": 8192

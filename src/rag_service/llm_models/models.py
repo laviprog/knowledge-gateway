@@ -17,7 +17,7 @@ class LlmModel(BaseModel):
     __tablename__ = "llm_models"
 
     public_id: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    provider: Mapped[str] = mapped_column(String(50), default="ollama")
+    provider: Mapped[str] = mapped_column(String(50), default="openai")
     provider_model: Mapped[str] = mapped_column(String(255))
     context_window_tokens: Mapped[int]
     max_completion_tokens: Mapped[int]

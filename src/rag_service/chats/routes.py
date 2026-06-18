@@ -116,8 +116,8 @@ async def create_chat_completion(
                 request_log=request_log,
                 plan=plan,
                 metrics=metrics,
-                error_code="ollama_timeout",
-                error_message="Ollama request timed out",
+                error_code="provider_timeout",
+                error_message="LLM request timed out",
             )
 
         async def completion_stream():
@@ -160,14 +160,14 @@ async def create_chat_completion(
         await request_log_service.finish_failed(
             request_log=request_log,
             plan=plan,
-            error_code="ollama_timeout",
+            error_code="provider_timeout",
             error_message=str(exc),
         )
         return openai_error_response(
             status_code=503,
             message=str(exc),
             error_type="server_error",
-            code="ollama_timeout",
+            code="provider_timeout",
         )
     except Exception as exc:
         await request_log_service.finish_failed(

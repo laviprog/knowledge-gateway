@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "provider": "ollama2"
+        "provider": "openai"
       }
   auth: inherit
 

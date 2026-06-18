@@ -15,10 +15,11 @@ from rag_service.chats.models import (
 from rag_service.chats.repositories import ChatCompletionRequestLogRepository
 from rag_service.config import settings
 from rag_service.documents.services import DocumentSearchWithMetrics, DocumentService
+from rag_service.llm.base import ChatChunk, ChatClient, ProviderTimeoutError
+from rag_service.llm.chat import OpenAIChatClient
 from rag_service.llm_models.models import LlmModel
 from rag_service.llm_models.services import LlmModelService
 from rag_service.log_config import get_log
-from rag_service.ollama.chat import OllamaChatChunk, OllamaChatClient, OllamaTimeoutError
 from rag_service.utils import generate_uuid
 
 from .prompts import build_rag_messages, get_latest_user_message
@@ -53,7 +54,7 @@ class ChatCompletionPlan:
     created: int
     request: ChatCompletionRequest
     llm_model: LlmModel
-    ollama_messages: list[dict[str, str]]
+    messages: list[dict[str, str]]
     retrieval: DocumentSearchWithMetrics
     started_at: float
 
@@ -67,8 +68,8 @@ class ChatCompletionMetrics:
     prompt_tokens: int | None
     completion_tokens: int | None
     total_tokens: int | None
-    ollama_ttfb_ms: float | None
-    ollama_generation_ms: float | None
+    llm_ttfb_ms: float | None
+    llm_generation_ms: float | None
     total_ms: float
 
 
@@ -91,11 +92,11 @@ class ChatCompletionService:
         self,
         document_service: DocumentService,
         llm_model_service: LlmModelService,
-        chat_client: OllamaChatClient | None = None,
+        chat_client: ChatClient | None = None,
     ) -> None:
         self.document_service = document_service
         self.llm_model_service = llm_model_service
-        self.chat_client = chat_client or OllamaChatClient()
+        self.chat_client = chat_client or OpenAIChatClient()
 
     async def prepare_completion(
         self,
@@ -120,7 +121,7 @@ class ChatCompletionService:
             query=query,
             limit=settings.RAG_RETRIEVAL_LIMIT,
         )
-        ollama_messages = build_rag_messages(chat_request.messages, retrieval.results)
+        messages = build_rag_messages(chat_request.messages, retrieval.results)
 
         log.info(
             "RAG retrieval completed",
@@ -128,7 +129,7 @@ class ChatCompletionService:
             provider_model=llm_model.provider_model,
             chunks_count=len(retrieval.results),
             document_ids=sorted({result.document_id for result in retrieval.results}),
-            ollama_embedding_ms=retrieval.timings.ollama_embedding_ms,
+            embedding_ms=retrieval.timings.embedding_ms,
             qdrant_search_ms=retrieval.timings.qdrant_search_ms,
             retrieval_total_ms=retrieval.timings.total_ms,
         )
@@ -138,7 +139,7 @@ class ChatCompletionService:
             created=int(time.time()),
             request=chat_request,
             llm_model=llm_model,
-            ollama_messages=ollama_messages,
+            messages=messages,
             retrieval=retrieval,
             started_at=started_at,
         )
@@ -167,7 +168,7 @@ class ChatCompletionService:
         )
 
         try:
-            async for chunk in self.iter_ollama_chunks(plan):
+            async for chunk in self.iter_chunks(plan):
                 if chunk.prompt_tokens is not None:
                     prompt_tokens = chunk.prompt_tokens
 
@@ -226,7 +227,7 @@ class ChatCompletionService:
                 await on_complete(metrics)
 
             yield format_sse_event("[DONE]")
-        except OllamaTimeoutError:
+        except ProviderTimeoutError:
             metrics = self.log_timeout(plan=plan)
             if on_timeout is not None:
                 await on_timeout(metrics)
@@ -234,9 +235,9 @@ class ChatCompletionService:
             yield format_sse_event(
                 {
                     "error": {
-                        "message": "Ollama request timed out",
+                        "message": "LLM request timed out",
                         "type": "server_error",
-                        "code": "ollama_timeout",
+                        "code": "provider_timeout",
                     }
                 }
             )
@@ -261,7 +262,7 @@ class ChatCompletionService:
         content_parts: list[str] = []
 
         try:
-            async for chunk in self.iter_ollama_chunks(plan):
+            async for chunk in self.iter_chunks(plan):
                 if chunk.prompt_tokens is not None:
                     prompt_tokens = chunk.prompt_tokens
 
@@ -275,9 +276,9 @@ class ChatCompletionService:
                     first_token_ms = round((time.perf_counter() - generation_start) * 1000, 2)
 
                 content_parts.append(chunk.content)
-        except OllamaTimeoutError as exc:
+        except ProviderTimeoutError as exc:
             self.log_timeout(plan=plan)
-            raise ChatCompletionTimeoutError("Ollama request timed out") from exc
+            raise ChatCompletionTimeoutError("LLM request timed out") from exc
         except Exception:
             log.exception(
                 "Chat completion failed",
@@ -318,23 +319,22 @@ class ChatCompletionService:
             metrics=metrics,
         )
 
-    async def iter_ollama_chunks(
+    async def iter_chunks(
         self,
         plan: ChatCompletionPlan,
-    ) -> AsyncIterator[OllamaChatChunk]:
+    ) -> AsyncIterator[ChatChunk]:
         """
-        Stream chunks from Ollama.
+        Stream chunks from the LLM provider.
         """
         max_completion_tokens = (
             plan.request.max_completion_tokens or plan.llm_model.max_completion_tokens
         )
         async for chunk in self.chat_client.stream_chat(
             model=plan.llm_model.provider_model,
-            messages=plan.ollama_messages,
+            messages=plan.messages,
             temperature=plan.request.temperature,
             top_p=plan.request.top_p,
             max_completion_tokens=max_completion_tokens,
-            think=plan.request.think,
         ):
             yield chunk
 
@@ -357,8 +357,8 @@ class ChatCompletionService:
                 if prompt_tokens is not None and completion_tokens is not None
                 else None
             ),
-            ollama_ttfb_ms=first_token_ms,
-            ollama_generation_ms=round((time.perf_counter() - generation_start) * 1000, 2),
+            llm_ttfb_ms=first_token_ms,
+            llm_generation_ms=round((time.perf_counter() - generation_start) * 1000, 2),
             total_ms=round((time.perf_counter() - plan.started_at) * 1000, 2),
         )
 
@@ -367,11 +367,11 @@ class ChatCompletionService:
             model=plan.request.model,
             provider_model=plan.llm_model.provider_model,
             chunks_count=len(plan.retrieval.results),
-            ollama_embedding_ms=plan.retrieval.timings.ollama_embedding_ms,
+            embedding_ms=plan.retrieval.timings.embedding_ms,
             qdrant_search_ms=plan.retrieval.timings.qdrant_search_ms,
             retrieval_total_ms=plan.retrieval.timings.total_ms,
-            ollama_ttfb_ms=metrics.ollama_ttfb_ms,
-            ollama_generation_ms=metrics.ollama_generation_ms,
+            llm_ttfb_ms=metrics.llm_ttfb_ms,
+            llm_generation_ms=metrics.llm_generation_ms,
             total_ms=metrics.total_ms,
         )
 
@@ -385,8 +385,8 @@ class ChatCompletionService:
             prompt_tokens=None,
             completion_tokens=None,
             total_tokens=None,
-            ollama_ttfb_ms=None,
-            ollama_generation_ms=None,
+            llm_ttfb_ms=None,
+            llm_generation_ms=None,
             total_ms=round((time.perf_counter() - plan.started_at) * 1000, 2),
         )
 
@@ -394,9 +394,9 @@ class ChatCompletionService:
             "Chat completion timed out",
             model=plan.request.model,
             provider_model=plan.llm_model.provider_model,
-            timeout_seconds=settings.OLLAMA_TIMEOUT_SECONDS,
+            timeout_seconds=settings.LLM_TIMEOUT_SECONDS,
             chunks_count=len(plan.retrieval.results),
-            ollama_embedding_ms=plan.retrieval.timings.ollama_embedding_ms,
+            embedding_ms=plan.retrieval.timings.embedding_ms,
             qdrant_search_ms=plan.retrieval.timings.qdrant_search_ms,
             retrieval_total_ms=plan.retrieval.timings.total_ms,
             total_ms=metrics.total_ms,
@@ -561,7 +561,7 @@ class ChatCompletionRequestLogService(
         request_log.provider_model = plan.llm_model.provider_model
         request_log.completion_id = plan.completion_id
         request_log.chunks_count = len(plan.retrieval.results)
-        request_log.ollama_embedding_ms = plan.retrieval.timings.ollama_embedding_ms
+        request_log.embedding_ms = plan.retrieval.timings.embedding_ms
         request_log.qdrant_search_ms = plan.retrieval.timings.qdrant_search_ms
         request_log.retrieval_total_ms = plan.retrieval.timings.total_ms
 
@@ -573,8 +573,8 @@ class ChatCompletionRequestLogService(
         request_log.prompt_tokens = metrics.prompt_tokens
         request_log.completion_tokens = metrics.completion_tokens
         request_log.total_tokens = metrics.total_tokens
-        request_log.ollama_ttfb_ms = metrics.ollama_ttfb_ms
-        request_log.ollama_generation_ms = metrics.ollama_generation_ms
+        request_log.llm_ttfb_ms = metrics.llm_ttfb_ms
+        request_log.llm_generation_ms = metrics.llm_generation_ms
         request_log.total_ms = metrics.total_ms
 
 

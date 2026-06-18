@@ -31,7 +31,6 @@ class ChatCompletionRequest(BaseSchema):
     temperature: float | None = Field(default=None, ge=0, le=2)
     top_p: float | None = Field(default=None, gt=0, le=1)
     max_completion_tokens: int | None = Field(default=None, gt=0)
-    think: bool | Literal["low", "medium", "high"] | None = False
 
     model_config: ClassVar[ConfigDict] = ConfigDict(from_attributes=True, extra="ignore")
 
@@ -91,10 +90,10 @@ class ChatCompletionRequestLog(BaseSchema):
     total_tokens: int | None
     chunks_count: int | None
     retrieval_total_ms: float | None
-    ollama_embedding_ms: float | None
+    embedding_ms: float | None
     qdrant_search_ms: float | None
-    ollama_ttfb_ms: float | None
-    ollama_generation_ms: float | None
+    llm_ttfb_ms: float | None
+    llm_generation_ms: float | None
     total_ms: float | None
     messages_count: int | None
     query_length: int | None

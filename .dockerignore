@@ -12,3 +12,5 @@ __pycache__/
 *.pyc
 .env.example
 .pre-commit-config.yaml
+.coverage
+LICENSE

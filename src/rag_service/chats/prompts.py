@@ -27,7 +27,7 @@ def build_rag_messages(
     context_chunks: list[VectorSearchResult],
 ) -> list[dict[str, str]]:
     """
-    Build Ollama chat messages with RAG context.
+    Build chat messages with RAG context.
     """
     system_content = build_system_content(messages, context_chunks)
     conversation_messages = [
