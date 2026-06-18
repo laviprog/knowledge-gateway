@@ -145,6 +145,7 @@ template with comments.
 | `QDRANT_COLLECTION_NAME`                 | `global_knowledge_base` | Qdrant collection for document chunks                               |
 | `LLM_API_KEY`                            | _(empty)_               | API key sent to the LLM provider (optional for keyless local servers) |
 | `LLM_TIMEOUT_SECONDS`                    | `30`                    | Timeout for LLM chat and embedding requests                         |
+| `LLM_MAX_RETRIES`                        | `2`                     | Automatic retries (exponential backoff) for transient provider errors |
 | `BOOTSTRAP_ADMIN_NAME`                   | `default_admin`         | Username for the auto-created admin account                         |
 | `BOOTSTRAP_ADMIN_API_KEY_NAME`           | `admin1`                | API key name for the bootstrap admin key                            |
 | `BOOTSTRAP_ADMIN_API_KEY`                | _(auto-generated)_      | Fixed bootstrap admin key — if unset, a key is generated and logged |

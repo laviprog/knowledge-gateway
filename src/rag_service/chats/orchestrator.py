@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from rag_service.exceptions import BadRequestError, NotFoundError
+from rag_service.llm.base import ProviderTimeoutError
 from rag_service.log_config import get_log
 
 from .schema import ChatCompletionRequest, ChatCompletionResponse
@@ -78,6 +79,23 @@ class ChatCompletionOrchestrator:
                 error_message=exc.detail,
             )
             return ChatCompletionError(404, exc.detail, "invalid_request_error", "model_not_found")
+        except ProviderTimeoutError as exc:
+            # Embedding call to the LLM provider failed during retrieval.
+            await self.request_log_service.finish_failed(
+                request_log=self._request_log,
+                error_code="provider_timeout",
+                error_message=str(exc),
+            )
+            return ChatCompletionError(503, str(exc), "server_error", "provider_timeout")
+        except Exception as exc:
+            # Any other preparation failure (e.g. Qdrant) must still finalize the log row,
+            # otherwise it stays PENDING forever and skews usage analytics.
+            await self.request_log_service.finish_failed(
+                request_log=self._request_log,
+                error_code="preparation_failed",
+                error_message=str(exc),
+            )
+            raise
 
         await self.request_log_service.mark_prepared(request_log=self._request_log, plan=plan)
         return plan
