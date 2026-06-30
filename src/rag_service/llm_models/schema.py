@@ -12,7 +12,7 @@ class LlmModelCreate(BaseSchema):
     provider_model: str = Field(min_length=1, max_length=255)
     context_window_tokens: int = Field(gt=0)
     max_completion_tokens: int = Field(gt=0)
-    provider_id: UUID | None = None
+    provider_id: UUID
     description: str | None = None
 
 
@@ -33,7 +33,7 @@ class LlmModel(BaseSchema):
     provider_model: str
     context_window_tokens: int
     max_completion_tokens: int
-    provider_id: UUID | None
+    provider_id: UUID
     description: str | None
     deleted_at: datetime | None
     created_at: datetime

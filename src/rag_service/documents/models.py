@@ -12,6 +12,8 @@ from rag_service.enums import BaseEnum
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from rag_service.knowledge_bases.models import KnowledgeBaseModel
+
 
 class DocumentIndexStatus(BaseEnum):
     """
@@ -30,6 +32,12 @@ class DocumentModel(BaseModel):
     """
 
     __tablename__ = "documents"
+
+    knowledge_base_id: Mapped[UUID] = mapped_column(ForeignKey("knowledge_bases.id"), index=True)
+    knowledge_base: Mapped["KnowledgeBaseModel"] = relationship(
+        "KnowledgeBaseModel",
+        lazy="selectin",
+    )
 
     title: Mapped[str] = mapped_column(String(255))
     content: Mapped[str] = mapped_column(Text)

@@ -1,7 +1,15 @@
 import asyncio
 from types import SimpleNamespace
 
+from rag_service.llm.client import ProviderConfig
 from rag_service.llm.embeddings import OpenAIEmbeddingClient
+
+_TEST_CONFIG = ProviderConfig(
+    base_url="http://example",
+    api_key=None,
+    timeout_seconds=30,
+    max_retries=2,
+)
 
 
 class FakeEmbeddings:
@@ -15,7 +23,7 @@ class FakeEmbeddings:
 
 
 def build_client(vectors: list[list[float]]) -> tuple[OpenAIEmbeddingClient, FakeEmbeddings]:
-    client = OpenAIEmbeddingClient()
+    client = OpenAIEmbeddingClient(_TEST_CONFIG, "bge-m3")
     embeddings = FakeEmbeddings(vectors)
     client.client = SimpleNamespace(embeddings=embeddings)  # ty: ignore[invalid-assignment]
     return client, embeddings

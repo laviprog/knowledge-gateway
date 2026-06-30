@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, File, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, File, Form, UploadFile, status
 
 from rag_service.documents.dependencies import DocumentServiceDep
 from rag_service.documents.extractors import extract_document_from_upload
@@ -21,6 +21,7 @@ from rag_service.exceptions.responses import (
     not_found_response,
     validation_error_response,
 )
+from rag_service.knowledge_bases.dependencies import KnowledgeBaseServiceDep
 from rag_service.pagination import PaginationDep
 from rag_service.security.dependencies import AdminApiKeyDep
 from rag_service.utils import is_dev_env
@@ -80,12 +81,13 @@ async def get_document(
 @router.post(
     path="",
     status_code=status.HTTP_201_CREATED,
-    description="Create a document in the global knowledge base",
+    description="Create a document in a knowledge base",
     responses={
         201: {
             "description": "Document has been created",
         },
         **auth_responses,
+        **not_found_response,
         **validation_error_response,
         **internal_server_error_response,
     },
@@ -97,6 +99,7 @@ async def create_document(
     document_service: DocumentServiceDep,
 ) -> Document:
     document_model = await document_service.create_document(
+        knowledge_base_id=document_create.knowledge_base_id,
         title=document_create.title,
         content=document_create.content,
         source=document_create.source,
@@ -122,10 +125,13 @@ async def search_documents(
     search_query: DocumentSearchQuery,
     admin_id: AdminApiKeyDep,
     document_service: DocumentServiceDep,
+    knowledge_base_service: KnowledgeBaseServiceDep,
 ) -> DocumentSearchResults:
+    knowledge_base = await knowledge_base_service.get_by_id_or_raise(search_query.knowledge_base_id)
     search_results = await document_service.search_documents(
         query=search_query.query,
         limit=search_query.limit,
+        knowledge_base=knowledge_base,
     )
     return DocumentSearchResults(
         results=[
@@ -144,18 +150,20 @@ async def search_documents(
 @router.post(
     path="/upload",
     status_code=status.HTTP_201_CREATED,
-    description="Upload a file into the global knowledge base",
+    description="Upload a file into a knowledge base",
     responses={
         201: {
             "description": "Document has been uploaded",
         },
         **auth_responses,
         **bad_request_response,
+        **not_found_response,
         **validation_error_response,
         **internal_server_error_response,
     },
 )
 async def upload_document(
+    knowledge_base_id: Annotated[UUID, Form(..., description="Target knowledge base id")],
     file: Annotated[UploadFile, File(..., description="Upload file (.txt, .md, .docx, .pdf)")],
     background_tasks: BackgroundTasks,
     admin_id: AdminApiKeyDep,
@@ -163,6 +171,7 @@ async def upload_document(
 ) -> Document:
     extracted_document = await extract_document_from_upload(file)
     document_model = await document_service.create_document(
+        knowledge_base_id=knowledge_base_id,
         title=extracted_document.title,
         content=extracted_document.content,
         source=extracted_document.source,

@@ -7,6 +7,7 @@ from rag_service.database.base_model import BaseModel
 from rag_service.security.encryption import EncryptedString
 
 if TYPE_CHECKING:
+    from rag_service.embedding_models.models import EmbeddingModel
     from rag_service.llm_models.models import LlmModel
 
 
@@ -27,6 +28,11 @@ class ProviderModel(BaseModel):
 
     llm_models: Mapped[list["LlmModel"]] = relationship(
         "LlmModel",
+        back_populates="inference_provider",
+        lazy="selectin",
+    )
+    embedding_models: Mapped[list["EmbeddingModel"]] = relationship(
+        "EmbeddingModel",
         back_populates="inference_provider",
         lazy="selectin",
     )

@@ -4,7 +4,28 @@ from uuid import uuid4
 from rag_service.documents.models import DocumentChunkModel, DocumentIndexStatus, DocumentModel
 from rag_service.documents.services import DocumentService
 from rag_service.documents.utils import hash_content, split_document_content
+from rag_service.embedding_models.models import EmbeddingModel
+from rag_service.knowledge_bases.models import KnowledgeBaseModel
 from rag_service.qdrant.vector_store import VectorSearchResult
+
+
+def build_knowledge_base() -> KnowledgeBaseModel:
+    embedding_model = EmbeddingModel(
+        id=uuid4(),
+        public_id="emb-default",
+        provider_model="bge-m3",
+        dimension=None,
+        collection_name="kb_emb_default",
+        provider_id=uuid4(),
+    )
+    knowledge_base = KnowledgeBaseModel(
+        id=uuid4(),
+        public_id="default",
+        name="Default",
+        embedding_model_id=embedding_model.id,
+    )
+    knowledge_base.embedding_model = embedding_model
+    return knowledge_base
 
 
 class FakeDocumentChunkRepository:
@@ -64,21 +85,31 @@ class FakeVectorStore:
         self.embeddings: list[list[float]] = []
         self.query_embedding: list[float] | None = None
         self.limit: int | None = None
+        self.collection_name: str | None = None
+        self.knowledge_base_id: str | None = None
 
     async def upsert_chunks(
         self,
+        collection_name: str,
+        knowledge_base_id: str,
         chunks: list[DocumentChunkModel],
         embeddings: list[list[float]],
     ) -> list[str]:
+        self.collection_name = collection_name
+        self.knowledge_base_id = knowledge_base_id
         self.chunks = chunks
         self.embeddings = embeddings
         return [f"point-{index}" for index, _ in enumerate(chunks)]
 
     async def search(
         self,
+        collection_name: str,
+        knowledge_base_id: str,
         query_embedding: list[float],
         limit: int,
     ) -> list[VectorSearchResult]:
+        self.collection_name = collection_name
+        self.knowledge_base_id = knowledge_base_id
         self.query_embedding = query_embedding
         self.limit = limit
         return [
@@ -160,10 +191,12 @@ def test_create_chunks_for_document_updates_document_chunks_count(
 
 
 def test_index_chunks_updates_qdrant_point_ids() -> None:
+    knowledge_base = build_knowledge_base()
+    embedding_client = FakeEmbeddingClient()
     service = object.__new__(DocumentService)
     service.chunk_repository = FakeDocumentChunkRepository()
-    service.embedding_client = FakeEmbeddingClient()
     service.vector_store = FakeVectorStore()
+    service._embedding_client_for = lambda embedding_model: embedding_client
 
     chunks = [
         DocumentChunkModel(
@@ -182,23 +215,28 @@ def test_index_chunks_updates_qdrant_point_ids() -> None:
         ),
     ]
 
-    asyncio.run(service.index_chunks(chunks))
+    asyncio.run(service.index_chunks(knowledge_base, chunks))
 
     assert [chunk.qdrant_point_id for chunk in chunks] == ["point-0", "point-1"]
     assert len(service.chunk_repository.updated_chunks) == 2
     assert service.vector_store.embeddings == [[0.0, 0.1], [1.0, 0.1]]
+    assert service.vector_store.collection_name == "kb_emb_default"
+    assert service.vector_store.knowledge_base_id == str(knowledge_base.id)
 
 
 def test_index_document_updates_document_status() -> None:
     document_id = uuid4()
+    knowledge_base = build_knowledge_base()
     document = DocumentModel(
         id=document_id,
+        knowledge_base_id=knowledge_base.id,
         title="FAQ",
         content="FAQ content",
         content_hash="hash",
         source=None,
         source_metadata={},
     )
+    document.knowledge_base = knowledge_base
     chunk = DocumentChunkModel(
         id=uuid4(),
         document_id=document_id,
@@ -210,8 +248,8 @@ def test_index_document_updates_document_status() -> None:
     service = object.__new__(DocumentService)
     service._repository_instance = FakeDocumentRepository(document)
     service.chunk_repository = FakeDocumentChunkRepository([chunk])
-    service.embedding_client = FakeEmbeddingClient()
     service.vector_store = FakeVectorStore()
+    service._embedding_client_for = lambda embedding_model: FakeEmbeddingClient()
 
     asyncio.run(service.index_document(document_id))
 
@@ -222,14 +260,30 @@ def test_index_document_updates_document_status() -> None:
 
 
 def test_search_documents_embeds_query_and_searches_vector_store() -> None:
+    knowledge_base = build_knowledge_base()
+    embedding_client = FakeEmbeddingClient()
     service = object.__new__(DocumentService)
-    service.embedding_client = FakeEmbeddingClient()
     service.vector_store = FakeVectorStore()
+    service._embedding_client_for = lambda embedding_model: embedding_client
 
-    results = asyncio.run(service.search_documents(query="return policy", limit=3))
+    results = asyncio.run(
+        service.search_documents(query="return policy", limit=3, knowledge_base=knowledge_base)
+    )
 
-    assert service.embedding_client.texts == ["return policy"]
+    assert embedding_client.texts == ["return policy"]
     assert service.vector_store.query_embedding == [0.0, 0.1]
     assert service.vector_store.limit == 3
+    assert service.vector_store.collection_name == "kb_emb_default"
+    assert service.vector_store.knowledge_base_id == str(knowledge_base.id)
     assert len(results) == 1
     assert results[0].content == "Matching content"
+
+
+def test_search_documents_without_knowledge_base_returns_empty() -> None:
+    service = object.__new__(DocumentService)
+    service.vector_store = FakeVectorStore()
+
+    results = asyncio.run(service.search_documents(query="anything", limit=3, knowledge_base=None))
+
+    assert results == []
+    assert service.vector_store.query_embedding is None

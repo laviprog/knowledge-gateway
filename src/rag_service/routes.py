@@ -6,6 +6,8 @@ from rag_service.api_keys.routes import router as api_keys_router
 from rag_service.chats.routes import router as chats_router
 from rag_service.config import settings
 from rag_service.documents.routes import router as documents_router
+from rag_service.embedding_models.routes import router as embedding_models_router
+from rag_service.knowledge_bases.routes import router as knowledge_bases_router
 from rag_service.llm_models.routes import llm_models_router, models_router
 from rag_service.providers.routes import router as providers_router
 from rag_service.schema import HealthCheck
@@ -59,6 +61,8 @@ def routes_register(app: FastAPI) -> None:
     app.include_router(router=api_keys_router)
     app.include_router(router=documents_router)
     app.include_router(router=providers_router)
+    app.include_router(router=embedding_models_router)
+    app.include_router(router=knowledge_bases_router)
     app.include_router(router=llm_models_router)
     app.include_router(router=models_router)
     app.include_router(router=chats_router)

@@ -96,6 +96,7 @@ def test_create_model_creates_llm_model() -> None:
             provider_model="llama3.1:8b",
             context_window_tokens=8192,
             max_completion_tokens=1024,
+            provider_id=uuid4(),
         )
     )
 
@@ -115,6 +116,7 @@ def test_create_model_rejects_duplicate_public_id() -> None:
                 provider_model="llama3.1:8b",
                 context_window_tokens=8192,
                 max_completion_tokens=1024,
+                provider_id=uuid4(),
             )
         )
 
@@ -132,6 +134,7 @@ def test_create_model_rejects_soft_deleted_duplicate_public_id() -> None:
                 provider_model="llama3.1:8b",
                 context_window_tokens=8192,
                 max_completion_tokens=1024,
+                provider_id=uuid4(),
             )
         )
 

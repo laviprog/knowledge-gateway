@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from pydantic import ValidationError
 
@@ -5,8 +7,10 @@ from rag_service.documents.schema import DocumentCreate
 
 
 def test_document_create_accepts_minimal_payload() -> None:
-    schema = DocumentCreate(title="FAQ", content="Answer text")
+    knowledge_base_id = uuid4()
+    schema = DocumentCreate(knowledge_base_id=knowledge_base_id, title="FAQ", content="Answer text")
 
+    assert schema.knowledge_base_id == knowledge_base_id
     assert schema.title == "FAQ"
     assert schema.content == "Answer text"
     assert schema.source is None
@@ -15,4 +19,4 @@ def test_document_create_accepts_minimal_payload() -> None:
 
 def test_document_create_rejects_empty_content() -> None:
     with pytest.raises(ValidationError):
-        DocumentCreate(title="FAQ", content="")
+        DocumentCreate(knowledge_base_id=uuid4(), title="FAQ", content="")

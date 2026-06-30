@@ -1,6 +1,7 @@
 import asyncio
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, cast
+from uuid import uuid4
 
 from rag_service.chats.schema import ChatCompletionRequest
 from rag_service.chats.services import ChatCompletionService, ChatCompletionTimeoutError
@@ -11,6 +12,7 @@ from rag_service.documents.services import (
 )
 from rag_service.llm.base import ChatChunk, ChatClient, ProviderTimeoutError
 from rag_service.llm_models.models import LlmModel
+from rag_service.providers.models import ProviderModel
 from rag_service.qdrant.schema import VectorSearchResult
 
 if TYPE_CHECKING:
@@ -27,6 +29,7 @@ class FakeDocumentService:
         self,
         query: str,
         limit: int,
+        knowledge_base=None,
     ) -> DocumentSearchWithMetrics:
         self.query = query
         self.limit = limit
@@ -50,14 +53,26 @@ class FakeDocumentService:
 
 class FakeLlmModelService:
     async def get_by_public_id_or_raise(self, public_id: str) -> LlmModel:
-        return LlmModel(
+        provider = ProviderModel(
+            id=uuid4(),
+            public_id="provider",
+            base_url="http://example/v1",
+            api_key=None,
+            timeout_seconds=30,
+            max_retries=2,
+        )
+        model = LlmModel(
+            id=uuid4(),
             public_id=public_id,
             provider="openai",
             provider_model="llama3.1:8b",
             context_window_tokens=8192,
             max_completion_tokens=1024,
+            provider_id=provider.id,
             description=None,
         )
+        model.inference_provider = provider
+        return model
 
 
 class FakeChatClient:

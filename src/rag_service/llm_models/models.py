@@ -25,10 +25,9 @@ class LlmModel(BaseModel):
     max_completion_tokens: Mapped[int]
     description: Mapped[str | None]
 
-    # Concrete inference endpoint + credentials. Nullable: falls back to the default provider
-    # configured via LLM_BASE_URL/LLM_API_KEY when unset.
-    provider_id: Mapped[UUID | None] = mapped_column(ForeignKey("providers.id"), index=True)
-    inference_provider: Mapped["ProviderModel | None"] = relationship(
+    # Concrete inference endpoint + credentials, required: providers live in the database.
+    provider_id: Mapped[UUID] = mapped_column(ForeignKey("providers.id"), index=True)
+    inference_provider: Mapped["ProviderModel"] = relationship(
         "ProviderModel",
         back_populates="llm_models",
         lazy="selectin",

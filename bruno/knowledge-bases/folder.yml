@@ -1,0 +1,7 @@
+info:
+  name: knowledge-bases
+  type: folder
+  seq: 8
+
+request:
+  auth: inherit

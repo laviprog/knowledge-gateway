@@ -2,7 +2,6 @@ import asyncio
 from typing import TYPE_CHECKING, cast
 
 import rag_service.llm.client as llm_client
-from rag_service.config import settings
 from rag_service.llm.client import ProviderConfig
 
 if TYPE_CHECKING:
@@ -35,9 +34,14 @@ def test_close_llm_clients_closes_and_clears_registry(monkeypatch) -> None:
 
 def test_get_llm_client_uses_configured_max_retries(monkeypatch) -> None:
     monkeypatch.setattr(llm_client, "_clients", {})
-    monkeypatch.setattr(settings, "LLM_MAX_RETRIES", 5)
+    config = ProviderConfig(
+        base_url="http://example",
+        api_key=None,
+        timeout_seconds=30,
+        max_retries=5,
+    )
 
-    client = llm_client.get_llm_client()
+    client = llm_client.get_llm_client(config)
 
     assert client.max_retries == 5
 

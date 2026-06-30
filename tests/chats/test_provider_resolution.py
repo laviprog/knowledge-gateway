@@ -1,12 +1,15 @@
 from uuid import uuid4
 
 from rag_service.chats.services import provider_config_for_model
-from rag_service.config import settings
 from rag_service.llm_models.models import LlmModel
+from rag_service.providers.config import (
+    DEFAULT_PROVIDER_MAX_RETRIES,
+    DEFAULT_PROVIDER_TIMEOUT_SECONDS,
+)
 from rag_service.providers.models import ProviderModel
 
 
-def build_model(provider: ProviderModel | None) -> LlmModel:
+def build_model(provider: ProviderModel) -> LlmModel:
     model = LlmModel(
         id=uuid4(),
         public_id="rag-assistant",
@@ -14,21 +17,13 @@ def build_model(provider: ProviderModel | None) -> LlmModel:
         provider_model="gpt-4o-mini",
         context_window_tokens=8192,
         max_completion_tokens=1024,
+        provider_id=provider.id,
     )
     model.inference_provider = provider
     return model
 
 
-def test_falls_back_to_default_provider_when_unset() -> None:
-    config = provider_config_for_model(build_model(None))
-
-    assert config.base_url == settings.LLM_BASE_URL
-    assert config.api_key == settings.LLM_API_KEY
-    assert config.timeout_seconds == settings.LLM_TIMEOUT_SECONDS
-    assert config.max_retries == settings.LLM_MAX_RETRIES
-
-
-def test_uses_provider_record_when_present() -> None:
+def test_uses_provider_record() -> None:
     provider = ProviderModel(
         id=uuid4(),
         public_id="azure-openai",
@@ -60,5 +55,5 @@ def test_provider_record_falls_back_to_settings_for_unset_fields() -> None:
 
     assert config.base_url == "http://localhost:8000/v1"
     assert config.api_key is None
-    assert config.timeout_seconds == settings.LLM_TIMEOUT_SECONDS
-    assert config.max_retries == settings.LLM_MAX_RETRIES
+    assert config.timeout_seconds == DEFAULT_PROVIDER_TIMEOUT_SECONDS
+    assert config.max_retries == DEFAULT_PROVIDER_MAX_RETRIES
