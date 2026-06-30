@@ -39,7 +39,7 @@ async def scalar_html():
     """
     return get_scalar_api_reference(
         openapi_url=f"{settings.ROOT_PATH}/openapi.json",
-        title="RAG Service API",
+        title="Knowledge Gateway API",
     )
 
 

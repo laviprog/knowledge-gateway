@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, status
 
+from rag_service.documents.dependencies import DocumentServiceDep
 from rag_service.exceptions.responses import (
     auth_responses,
     conflict_response,
@@ -149,5 +150,10 @@ async def delete_knowledge_base(
     knowledge_base_id: UUID,
     admin_id: AdminApiKeyDep,
     knowledge_base_service: KnowledgeBaseServiceDep,
+    document_service: DocumentServiceDep,
 ) -> None:
+    # Cascade: documents belong to exactly one knowledge base, so they (and their vectors) are
+    # removed together with it; otherwise they would be orphaned and leak vectors in Qdrant.
+    knowledge_base = await knowledge_base_service.get_by_id_or_raise(knowledge_base_id)
+    await document_service.delete_documents_for_knowledge_base(knowledge_base)
     await knowledge_base_service.delete_knowledge_base(knowledge_base_id)

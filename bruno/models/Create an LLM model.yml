@@ -14,7 +14,8 @@ http:
         "provider": "openai",
         "provider_model": "gemma4:e4b",
         "context_window_tokens": 128000,
-        "max_completion_tokens": 8192
+        "max_completion_tokens": 4096,
+        "provider_id": ""
       }
   auth: inherit
 

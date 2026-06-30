@@ -1,3 +1,4 @@
+import re
 from uuid import UUID
 
 from advanced_alchemy.filters import LimitOffset, OrderBy
@@ -5,7 +6,18 @@ from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 
 from rag_service.embedding_models.models import EmbeddingModel
 from rag_service.embedding_models.repositories import EmbeddingModelRepository
-from rag_service.exceptions import ConflictError, NotFoundError
+from rag_service.exceptions import BadRequestError, ConflictError, NotFoundError
+
+# Qdrant rejects characters such as ":" and "/" in collection names.
+_VALID_COLLECTION_NAME = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+def _default_collection_name(public_id: str) -> str:
+    """
+    Derive a Qdrant-safe default collection name from an embedding model public id.
+    """
+    slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", public_id).strip("_")
+    return f"kb_emb_{slug or 'default'}"
 
 
 class EmbeddingModelService(
@@ -36,10 +48,18 @@ class EmbeddingModelService(
         description: str | None = None,
     ) -> EmbeddingModel:
         """
-        Create an embedding model. The Qdrant collection name defaults to ``kb_emb_<public_id>``.
+        Create an embedding model. The Qdrant collection name defaults to a sanitized
+        ``kb_emb_<public_id>`` and, when given explicitly, must be Qdrant-safe.
         """
         await self.ensure_public_id_is_available(public_id)
-        resolved_collection = collection_name or f"kb_emb_{public_id}"
+
+        if collection_name is None:
+            resolved_collection = _default_collection_name(public_id)
+        elif _VALID_COLLECTION_NAME.match(collection_name):
+            resolved_collection = collection_name
+        else:
+            raise BadRequestError("collection_name may only contain letters, digits, '_' and '-'")
+
         await self.ensure_collection_name_is_available(resolved_collection)
 
         return await self.repository.add(

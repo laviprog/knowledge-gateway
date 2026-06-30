@@ -1,6 +1,6 @@
 [project]
 name = "knowledge-gateway"
-version = "0.2.0"
+version = "0.2.1"
 description = "FastAPI service for OpenAI-compatible RAG chat completions."
 readme = "README.md"
 requires-python = ">=3.12"

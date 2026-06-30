@@ -328,6 +328,46 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
             qdrant_points_removed=len(qdrant_point_ids),
         )
 
+    async def delete_documents_for_knowledge_base(self, knowledge_base: KnowledgeBaseModel) -> int:
+        """
+        Soft-delete every active document (and its chunks) in a knowledge base and remove their
+        vectors from the collection. Returns the number of documents removed.
+        """
+        documents = await self.repository.list(
+            DocumentModel.knowledge_base_id == knowledge_base.id,
+            DocumentModel.deleted_at.is_(None),
+        )
+        if not documents:
+            return 0
+
+        collection_name = knowledge_base.embedding_model.collection_name
+        qdrant_point_ids: list[str] = []
+
+        for document in documents:
+            chunks = await self.chunk_repository.list(
+                DocumentChunkModel.document_id == document.id,
+                DocumentChunkModel.deleted_at.is_(None),
+            )
+            for chunk in chunks:
+                if chunk.qdrant_point_id is not None:
+                    qdrant_point_ids.append(chunk.qdrant_point_id)
+                chunk.soft_delete()
+                await self.chunk_repository.update(chunk, auto_commit=False)
+
+            document.soft_delete()
+            await self.repository.update(document, auto_commit=False)
+
+        await self.vector_store.delete_points(collection_name, qdrant_point_ids)
+        await self.repository.session.commit()
+
+        log.info(
+            "Knowledge base documents deleted",
+            knowledge_base_id=str(knowledge_base.id),
+            documents_count=len(documents),
+            qdrant_points_removed=len(qdrant_point_ids),
+        )
+        return len(documents)
+
     async def get_by_id_or_raise(self, document_id: UUID) -> DocumentModel:
         """
         Return an active document by id.

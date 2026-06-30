@@ -5,7 +5,7 @@ import pytest
 
 from rag_service.embedding_models.models import EmbeddingModel
 from rag_service.embedding_models.services import EmbeddingModelService
-from rag_service.exceptions import ConflictError, NotFoundError
+from rag_service.exceptions import BadRequestError, ConflictError, NotFoundError
 
 
 class FakeEmbeddingModelRepository:
@@ -65,6 +65,37 @@ def test_create_embedding_model_defaults_collection_name() -> None:
 
     assert model.public_id == "bge"
     assert model.collection_name == "kb_emb_bge"
+
+
+def test_create_embedding_model_sanitizes_default_collection_name() -> None:
+    service = object.__new__(EmbeddingModelService)
+    service._repository_instance = FakeEmbeddingModelRepository()
+
+    model = asyncio.run(
+        service.create_embedding_model(
+            public_id="bge-m3:567m",
+            provider_model="bge-m3:567m",
+            provider_id=uuid4(),
+        )
+    )
+
+    # ":" is illegal in a Qdrant collection name and must be sanitized.
+    assert model.collection_name == "kb_emb_bge-m3_567m"
+
+
+def test_create_embedding_model_rejects_invalid_collection_name() -> None:
+    service = object.__new__(EmbeddingModelService)
+    service._repository_instance = FakeEmbeddingModelRepository()
+
+    with pytest.raises(BadRequestError):
+        asyncio.run(
+            service.create_embedding_model(
+                public_id="bge",
+                provider_model="bge-m3",
+                provider_id=uuid4(),
+                collection_name="bad:name",
+            )
+        )
 
 
 def test_create_embedding_model_rejects_duplicate_public_id() -> None:

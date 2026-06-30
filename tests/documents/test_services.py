@@ -87,6 +87,12 @@ class FakeVectorStore:
         self.limit: int | None = None
         self.collection_name: str | None = None
         self.knowledge_base_id: str | None = None
+        self.deleted_collection: str | None = None
+        self.deleted_point_ids: list[str] | None = None
+
+    async def delete_points(self, collection_name: str, point_ids: list[str]) -> None:
+        self.deleted_collection = collection_name
+        self.deleted_point_ids = point_ids
 
     async def upsert_chunks(
         self,
@@ -287,3 +293,60 @@ def test_search_documents_without_knowledge_base_returns_empty() -> None:
 
     assert results == []
     assert service.vector_store.query_embedding is None
+
+
+class FakeSession:
+    def __init__(self) -> None:
+        self.committed = False
+
+    async def commit(self) -> None:
+        self.committed = True
+
+
+class FakeDocumentRepositoryWithList:
+    def __init__(self, documents: list[DocumentModel]) -> None:
+        self.documents = documents
+        self.session = FakeSession()
+        self.updated: list[DocumentModel] = []
+
+    async def list(self, *filters) -> list[DocumentModel]:
+        return self.documents
+
+    async def update(self, document: DocumentModel, auto_commit: bool) -> DocumentModel:
+        self.updated.append(document)
+        return document
+
+
+def test_delete_documents_for_knowledge_base_cascades() -> None:
+    knowledge_base = build_knowledge_base()
+    document = DocumentModel(
+        id=uuid4(),
+        knowledge_base_id=knowledge_base.id,
+        title="FAQ",
+        content="content",
+        content_hash="hash",
+        source=None,
+        source_metadata={},
+    )
+    chunk = DocumentChunkModel(
+        id=uuid4(),
+        document_id=document.id,
+        chunk_index=0,
+        content="chunk",
+        content_hash="hash",
+        qdrant_point_id="point-0",
+    )
+
+    service = object.__new__(DocumentService)
+    service._repository_instance = FakeDocumentRepositoryWithList([document])
+    service.chunk_repository = FakeDocumentChunkRepository([chunk])
+    service.vector_store = FakeVectorStore()
+
+    count = asyncio.run(service.delete_documents_for_knowledge_base(knowledge_base))
+
+    assert count == 1
+    assert document.is_deleted
+    assert chunk.is_deleted
+    assert service.vector_store.deleted_collection == "kb_emb_default"
+    assert service.vector_store.deleted_point_ids == ["point-0"]
+    assert service.repository.session.committed is True

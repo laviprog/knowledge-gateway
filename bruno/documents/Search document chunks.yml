@@ -11,7 +11,8 @@ http:
     data: |-
       {
         "query": "Как отключить кэшбек?",
-        "limit": 10
+        "limit": 10,
+        "knowledge_base_id": "{{KNOWLEDGE_BASE_ID}}"
       }
   auth: inherit
 
