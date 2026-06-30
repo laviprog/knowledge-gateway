@@ -16,64 +16,89 @@
 | src/rag\_service/chats/\_\_init\_\_.py                  |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/chats/dependencies.py                  |        9 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/chats/models.py                        |       34 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/chats/orchestrator.py                  |       67 |        8 |        4 |        1 |     87% |118, 139-146, 167-174, 185 |
 | src/rag\_service/chats/prompts.py                       |       38 |        5 |       16 |        5 |     81% |67, 75, 79, 84, 87 |
 | src/rag\_service/chats/repositories.py                  |        4 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/chats/routes.py                        |       65 |       39 |        6 |        1 |     38% |67-179, 206-216 |
-| src/rag\_service/chats/schema.py                        |       36 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/chats/services.py                      |      192 |       72 |       52 |        4 |     60% |179, 233, 245-252, 273, 282-289, 300-\>307, 428-438, 449-450, 462-467, 481-491, 502-507, 524-551, 558-566, 573-578, 585-589 |
+| src/rag\_service/chats/routes.py                        |       43 |       13 |        8 |        1 |     61% |69-97, 124-134, 178 |
+| src/rag\_service/chats/schema.py                        |       40 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/chats/services.py                      |      242 |       90 |       64 |        9 |     60% |178-181, 215, 269, 281-288, 309, 318-325, 336-\>343, 463-\>465, 465-\>469, 469-\>473, 473-\>exit, 499-509, 520-521, 533-538, 552-562, 573-578, 595-617, 632-673, 710-723, 730-738, 745-750, 765-769, 776, 783 |
 | src/rag\_service/chats/sse.py                           |       10 |        0 |        2 |        0 |    100% |           |
-| src/rag\_service/config.py                              |       31 |        1 |        0 |        0 |     97% |        69 |
+| src/rag\_service/config.py                              |       29 |        1 |        0 |        0 |     97% |        66 |
 | src/rag\_service/database/\_\_init\_\_.py               |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/database/base\_model.py                |        5 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/database/config.py                     |        4 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/database/metadata.py                   |        5 |        5 |        0 |        0 |      0% |       1-5 |
+| src/rag\_service/database/metadata.py                   |        8 |        8 |        0 |        0 |      0% |       1-8 |
 | src/rag\_service/database/mixins/\_\_init\_\_.py        |        2 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/database/mixins/soft\_delete\_mixin.py |       10 |        1 |        0 |        0 |     90% |        21 |
 | src/rag\_service/documents/\_\_init\_\_.py              |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/documents/dependencies.py              |        9 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/documents/extractors.py                |       31 |        3 |        8 |        1 |     90% | 56-57, 61 |
-| src/rag\_service/documents/models.py                    |       34 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/documents/models.py                    |       36 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/documents/repositories.py              |        6 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/documents/routes.py                    |       38 |       14 |        0 |        0 |     63% |47-51, 76-77, 99-106, 126-130, 164-172, 193 |
+| src/rag\_service/documents/routes.py                    |       40 |       15 |        0 |        0 |     62% |48-52, 77-78, 101-109, 130-136, 172-181, 202 |
 | src/rag\_service/documents/schema.py                    |       18 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/documents/services.py                  |       98 |       25 |       10 |        2 |     73% |56-61, 73-88, 121, 151-156, 199-217, 229 |
-| src/rag\_service/documents/tasks.py                     |       11 |        5 |        0 |        0 |     55% |     14-18 |
+| src/rag\_service/documents/services.py                  |      152 |       36 |       22 |        4 |     75% |64-65, 71-76, 89-116, 153, 215-227, 302-323, 341, 352-\>354, 381, 389-394 |
+| src/rag\_service/documents/tasks.py                     |       12 |        6 |        0 |        0 |     50% |     14-19 |
 | src/rag\_service/documents/utils.py                     |       54 |        7 |       22 |        3 |     84% |25, 57-61, 70-\>73, 80 |
+| src/rag\_service/embedding\_models/\_\_init\_\_.py      |        0 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/embedding\_models/dependencies.py      |        9 |        2 |        0 |        0 |     78% |     11-12 |
+| src/rag\_service/embedding\_models/models.py            |       14 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/embedding\_models/repositories.py      |        4 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/embedding\_models/routes.py            |       28 |        9 |        0 |        0 |     68% |44-48, 73-74, 96-104, 127-135, 156 |
+| src/rag\_service/embedding\_models/schema.py            |       18 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/embedding\_models/services.py          |       56 |       15 |       20 |        0 |     67% |34-39, 92-110 |
 | src/rag\_service/enums.py                               |        5 |        1 |        0 |        0 |     80% |        12 |
 | src/rag\_service/exceptions/\_\_init\_\_.py             |        3 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/exceptions/domain.py                   |       27 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/exceptions/handlers.py                 |       24 |        4 |        0 |        0 |     83% |38-46, 76-83 |
 | src/rag\_service/exceptions/responses.py                |       11 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/exceptions/schema.py                   |        4 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/knowledge\_bases/\_\_init\_\_.py       |        0 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/knowledge\_bases/dependencies.py       |        9 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/knowledge\_bases/models.py             |       11 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/knowledge\_bases/repositories.py       |        4 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/knowledge\_bases/routes.py             |       31 |       11 |        0 |        0 |     65% |45-49, 74-75, 98-104, 127-133, 157-159 |
+| src/rag\_service/knowledge\_bases/schema.py             |       14 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/knowledge\_bases/services.py           |       56 |       23 |       14 |        0 |     53% |28-33, 71-83, 89-91, 97-102, 108, 117-122 |
 | src/rag\_service/lifecycle.py                           |       18 |        8 |        0 |        0 |     56% |     16-24 |
 | src/rag\_service/llm/\_\_init\_\_.py                    |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/llm/base.py                            |        7 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/llm/chat.py                            |       33 |        1 |       12 |        1 |     96% |        37 |
-| src/rag\_service/llm/client.py                          |       12 |        1 |        4 |        1 |     88% |        30 |
-| src/rag\_service/llm/embeddings.py                      |       11 |        4 |        2 |        0 |     54% |     18-25 |
+| src/rag\_service/llm/chat.py                            |       46 |        6 |       14 |        1 |     85% | 41, 91-95 |
+| src/rag\_service/llm/client.py                          |       15 |        0 |        4 |        0 |    100% |           |
+| src/rag\_service/llm/embeddings.py                      |       16 |        0 |        2 |        0 |    100% |           |
 | src/rag\_service/llm\_models/\_\_init\_\_.py            |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/llm\_models/dependencies.py            |        9 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/llm\_models/models.py                  |       11 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/llm\_models/models.py                  |       13 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/llm\_models/repositories.py            |        4 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/llm\_models/routes.py                  |       33 |       11 |        0 |        0 |     67% |47-51, 76-77, 99-107, 130-139, 160, 178-179 |
-| src/rag\_service/llm\_models/schema.py                  |       25 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/llm\_models/services.py                |       51 |       18 |       18 |        3 |     55% |20-21, 27-32, 76-93, 115, 127 |
+| src/rag\_service/llm\_models/routes.py                  |       33 |       11 |        0 |        0 |     67% |47-51, 76-77, 99-108, 131-141, 162, 180-181 |
+| src/rag\_service/llm\_models/schema.py                  |       26 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/llm\_models/services.py                |       53 |       20 |       20 |        3 |     52% |20-21, 27-32, 79-99, 121, 133 |
 | src/rag\_service/log\_config.py                         |       44 |        3 |        2 |        1 |     91% |42, 110, 135 |
-| src/rag\_service/main.py                                |       14 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/middlewares.py                         |       29 |        3 |        4 |        1 |     88% |41-47, 53-\>57 |
+| src/rag\_service/main.py                                |       16 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/metrics.py                             |        8 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/middlewares.py                         |       32 |        3 |        6 |        1 |     89% |47-53, 59-\>63 |
 | src/rag\_service/pagination.py                          |        9 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/providers/\_\_init\_\_.py              |        0 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/providers/config.py                    |        6 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/providers/dependencies.py              |        9 |        2 |        0 |        0 |     78% |     11-12 |
+| src/rag\_service/providers/models.py                    |       12 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/providers/repositories.py              |        4 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/providers/routes.py                    |       28 |        9 |        0 |        0 |     68% |42-46, 71-72, 94-102, 125-134, 155 |
+| src/rag\_service/providers/schema.py                    |       24 |        1 |        0 |        0 |     96% |        46 |
+| src/rag\_service/providers/services.py                  |       43 |       17 |       16 |        0 |     51% |20-25, 65-86 |
 | src/rag\_service/qdrant/\_\_init\_\_.py                 |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/qdrant/client.py                       |       12 |        1 |        4 |        2 |     81% |13-\>19, 28 |
 | src/rag\_service/qdrant/schema.py                       |        3 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/qdrant/vector\_store.py                |       40 |       23 |       12 |        1 |     35% |27-31, 47-77, 83-87, 105-126 |
+| src/rag\_service/qdrant/vector\_store.py                |       54 |       22 |       14 |        1 |     54% |93-130, 136-145, 169-205 |
 | src/rag\_service/redis/\_\_init\_\_.py                  |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/redis/client.py                        |       13 |        7 |        4 |        0 |     35% |10-12, 16, 21-23 |
 | src/rag\_service/redis/rate\_limiter.py                 |       20 |        0 |        2 |        0 |    100% |           |
-| src/rag\_service/routes.py                              |       30 |        4 |        0 |        0 |     87% |29, 37, 48-49 |
+| src/rag\_service/routes.py                              |       36 |        4 |        0 |        0 |     89% |32, 40, 51-52 |
 | src/rag\_service/schema.py                              |       10 |        1 |        0 |        0 |     90% |        14 |
 | src/rag\_service/security/\_\_init\_\_.py               |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/security/api\_keys.py                  |       18 |        9 |        0 |        0 |     50% |18-21, 28, 39, 46-48 |
 | src/rag\_service/security/dependencies.py               |       30 |        0 |        6 |        0 |    100% |           |
+| src/rag\_service/security/encryption.py                 |       31 |        6 |        8 |        0 |     74% |67-69, 72-74 |
 | src/rag\_service/users/\_\_init\_\_.py                  |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/users/dependencies.py                  |        9 |        2 |        0 |        0 |     78% |     11-12 |
 | src/rag\_service/users/models.py                        |       15 |        0 |        0 |        0 |    100% |           |
@@ -82,7 +107,7 @@
 | src/rag\_service/users/schema.py                        |       16 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/users/services.py                      |       58 |       38 |       14 |        0 |     28% |20-21, 27-32, 43, 61-79, 92-106, 112-120, 131-141, 152-153, 159-167 |
 | src/rag\_service/utils.py                               |       11 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                               | **1585** |  **377** |  **226** |   **27** | **73%** |           |
+| **TOTAL**                                               | **2214** |  **489** |  **322** |   **34** | **74%** |           |
 
 
 ## Setup coverage badge
