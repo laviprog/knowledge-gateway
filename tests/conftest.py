@@ -13,6 +13,7 @@ os.environ.setdefault("LLM_BASE_URL", "http://localhost:11434/v1")
 os.environ.setdefault("LLM_API_KEY", "test")
 os.environ.setdefault("LLM_EMBEDDING_MODEL", "embeddinggemma")
 os.environ.setdefault("API_KEY_PEPPER", "test-pepper-value-for-tests-only")
+os.environ.setdefault("PROVIDER_SECRET_KEY", "test-provider-secret-for-tests-only")
 
 
 @pytest.fixture(params=["asyncio"])

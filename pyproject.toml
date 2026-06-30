@@ -8,6 +8,7 @@ dependencies = [
     "advanced-alchemy==1.9.3",
     "pydantic-settings>=2.14.1",
     "structlog>=25.5.0",
+    "cryptography>=49.0.0"
 ]
 
 [dependency-groups]

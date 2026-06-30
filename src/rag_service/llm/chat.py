@@ -5,7 +5,7 @@ import openai
 
 from rag_service import metrics
 from rag_service.llm.base import ChatChunk, ProviderTimeoutError
-from rag_service.llm.client import get_llm_client
+from rag_service.llm.client import ProviderConfig, get_llm_client
 from rag_service.log_config import get_log
 
 if TYPE_CHECKING:
@@ -19,8 +19,8 @@ class OpenAIChatClient:
     OpenAI-compatible chat client.
     """
 
-    def __init__(self):
-        self.client = get_llm_client()
+    def __init__(self, config: ProviderConfig | None = None):
+        self.client = get_llm_client(config)
 
     async def stream_chat(
         self,

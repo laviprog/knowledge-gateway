@@ -1,0 +1,26 @@
+info:
+  name: Create an inference provider
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{API_BASE_URL}}/providers"
+  body:
+    type: json
+    data: |-
+      {
+        "public_id": "openai",
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "*****",
+        "description": "smth",
+        "timeout_seconds": 30,
+        "max_retries": 2
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
