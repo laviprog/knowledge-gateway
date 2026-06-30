@@ -2,6 +2,22 @@ opencollection: 1.0.0
 
 info:
   name: rag-service
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  auth:
+    type: bearer
+    token: "{{API_KEY}}"
 bundled: false
 extensions:
   bruno:

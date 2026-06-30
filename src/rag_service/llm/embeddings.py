@@ -1,7 +1,6 @@
 import time
 
-from rag_service.config import settings
-from rag_service.llm.client import get_llm_client
+from rag_service.llm.client import ProviderConfig, get_llm_client
 from rag_service.log_config import get_log
 
 log = get_log(__name__)
@@ -9,12 +8,12 @@ log = get_log(__name__)
 
 class OpenAIEmbeddingClient:
     """
-    OpenAI-compatible embeddings client.
+    OpenAI-compatible embeddings client bound to a provider endpoint and a model.
     """
 
-    def __init__(self):
-        self.client = get_llm_client()
-        self.model = settings.LLM_EMBEDDING_MODEL
+    def __init__(self, config: ProviderConfig, model: str):
+        self.client = get_llm_client(config)
+        self.model = model
 
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
         """

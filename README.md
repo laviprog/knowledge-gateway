@@ -79,10 +79,9 @@ The service has three main responsibilities:
 
 - Docker and Docker Compose
 - `uv` for local development
-- An OpenAI-compatible API reachable at `LLM_BASE_URL` (OpenAI, Azure OpenAI, vLLM, Ollama's `/v1`,
-  etc.) that serves:
-    - the embedding model set by `LLM_EMBEDDING_MODEL`
-    - any chat models you plan to register in `llm_models`
+- One or more OpenAI-compatible APIs (OpenAI, Azure OpenAI, vLLM, Ollama's `/v1`, etc.) that serve
+  your embedding and chat models. Endpoints and credentials are configured in the database as
+  **providers** (via the admin API) after first launch — not in `.env`.
 
 ### Quick Start
 
@@ -90,7 +89,7 @@ The service has three main responsibilities:
 # 1. Clone and configure
 cp .env.example .env
 # Edit .env — at minimum set: POSTGRES_PASSWORD, QDRANT_API_KEY, API_KEY_PEPPER,
-#             BOOTSTRAP_ADMIN_API_KEY, LLM_BASE_URL, and LLM_EMBEDDING_MODEL
+#             PROVIDER_SECRET_KEY, and BOOTSTRAP_ADMIN_API_KEY
 
 # 2. Build and start all services
 make build
@@ -105,6 +104,22 @@ The API will be available at `http://127.0.0.1:8080/api/v1`.
 Interactive API docs (Scalar) at `http://127.0.0.1:8080/api/v1/docs` (requires `ENV=dev`).
 
 Docker Compose runs database migrations automatically before the API starts.
+
+### First-time setup
+
+The system ships with no inference configuration — an admin creates it via the admin API
+(`ENV=dev` exposes these routes in the docs) in this order:
+
+1. **Provider** (`POST /providers`) — base URL + (encrypted) API key of an OpenAI-compatible
+   endpoint.
+2. **Embedding model** (`POST /embedding-models`) — `provider_model` + provider; owns a Qdrant
+   collection.
+3. **Knowledge base** (`POST /knowledge-bases`) — bound to an embedding model; documents are
+   uploaded into it and retrieved from it.
+4. **LLM model** (`POST /llm-models`) — `provider_model` + provider; exposed via `GET /models`.
+
+Clients pick a knowledge base per request by passing `knowledge_base_id` in the chat completion
+body (OpenAI SDK `extra_body`); omitting it runs the completion without retrieval.
 
 ### Useful Commands
 
@@ -131,8 +146,6 @@ template with comments.
 | `POSTGRES_*`          | PostgreSQL connection settings (`HOST`, `PORT`, `DB`, `USER`, `PASSWORD`)                                                         |
 | `QDRANT_URL`          | Qdrant service URL                                                                                                                |
 | `QDRANT_API_KEY`      | Qdrant authentication key                                                                                                         |
-| `LLM_BASE_URL`        | OpenAI-compatible API base URL (e.g. `https://api.openai.com/v1`, or `.../v1` for Ollama/vLLM)                                    |
-| `LLM_EMBEDDING_MODEL` | Embedding model used for chunk indexing and query encoding (must match the Qdrant collection's vector size)                       |
 
 **Optional / with defaults:**
 
@@ -143,10 +156,7 @@ template with comments.
 | `REDIS_URL`                              | `redis://redis:6379`    | Redis URL for rate limiting counters                                  |
 | `RATE_LIMIT_DEFAULT_REQUESTS_PER_MINUTE` | `60`                    | Default rate limit for new users (`0` = unlimited)                    |
 | `TRUSTED_PROXY_IPS`                      | _(empty)_               | Comma-separated IPs whose `X-Forwarded-For` header is trusted         |
-| `QDRANT_COLLECTION_NAME`                 | `global_knowledge_base` | Qdrant collection for document chunks                                 |
-| `LLM_API_KEY`                            | _(empty)_               | API key sent to the LLM provider (optional for keyless local servers) |
-| `LLM_TIMEOUT_SECONDS`                    | `30`                    | Timeout for LLM chat and embedding requests                           |
-| `LLM_MAX_RETRIES`                        | `2`                     | Automatic retries (exponential backoff) for transient provider errors |
+| `PROVIDER_SECRET_KEY`                    | _(empty)_               | Secret used to encrypt provider API keys at rest (required only when a provider record stores an `api_key`) |
 | `BOOTSTRAP_ADMIN_NAME`                   | `default_admin`         | Username for the auto-created admin account                           |
 | `BOOTSTRAP_ADMIN_API_KEY_NAME`           | `admin1`                | API key name for the bootstrap admin key                              |
 | `BOOTSTRAP_ADMIN_API_KEY`                | _(auto-generated)_      | Fixed bootstrap admin key — if unset, a key is generated and logged   |

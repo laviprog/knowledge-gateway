@@ -31,6 +31,9 @@ class ChatCompletionRequest(BaseSchema):
     temperature: float | None = Field(default=None, ge=0, le=2)
     top_p: float | None = Field(default=None, gt=0, le=1)
     max_completion_tokens: int | None = Field(default=None, gt=0)
+    # Non-standard extension (clients pass it via OpenAI SDK `extra_body`). Selects the
+    # knowledge base for RAG retrieval; when omitted, the request runs without retrieval.
+    knowledge_base_id: UUID | None = None
 
     model_config: ClassVar[ConfigDict] = ConfigDict(from_attributes=True, extra="ignore")
 

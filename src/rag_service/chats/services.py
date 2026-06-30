@@ -16,12 +16,14 @@ from rag_service.chats.models import (
 from rag_service.chats.repositories import ChatCompletionRequestLogRepository
 from rag_service.config import settings
 from rag_service.documents.services import DocumentSearchWithMetrics, DocumentService
+from rag_service.exceptions import BadRequestError
 from rag_service.llm.base import ChatChunk, ChatClient, ProviderTimeoutError
 from rag_service.llm.chat import OpenAIChatClient
-from rag_service.llm.client import ProviderConfig, default_provider_config
+from rag_service.llm.client import ProviderConfig
 from rag_service.llm_models.models import LlmModel
 from rag_service.llm_models.services import LlmModelService
 from rag_service.log_config import get_log
+from rag_service.providers.config import resolve_provider_config
 from rag_service.utils import generate_uuid
 
 from .prompts import build_rag_messages, get_latest_user_message
@@ -41,6 +43,9 @@ log = get_log(__name__)
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
+
+    from rag_service.knowledge_bases.models import KnowledgeBaseModel
+    from rag_service.knowledge_bases.services import KnowledgeBaseService
 
 
 class ChatCompletionTimeoutError(Exception):
@@ -97,10 +102,14 @@ class ChatCompletionService:
         self,
         document_service: DocumentService,
         llm_model_service: LlmModelService,
+        knowledge_base_service: "KnowledgeBaseService | None" = None,
         chat_client: ChatClient | None = None,
     ) -> None:
         self.document_service = document_service
         self.llm_model_service = llm_model_service
+        # Resolves the default knowledge base for models without one. Optional so the service
+        # can be exercised without retrieval wiring (tests/DI).
+        self.knowledge_base_service = knowledge_base_service
         # When provided (tests/DI), the injected client wins. Otherwise a client is resolved
         # per request from the model's provider, so different models can target different
         # OpenAI-compatible endpoints.
@@ -115,11 +124,13 @@ class ChatCompletionService:
         """
         started_at = time.perf_counter()
         llm_model = await self.llm_model_service.get_by_public_id_or_raise(chat_request.model)
+        knowledge_base = await self._resolve_knowledge_base(chat_request.knowledge_base_id)
 
         log.info(
             "Chat completion started",
             model=chat_request.model,
             provider_model=llm_model.provider_model,
+            knowledge_base=knowledge_base.public_id if knowledge_base is not None else None,
             messages_count=len(chat_request.messages),
             stream=chat_request.stream,
         )
@@ -128,6 +139,7 @@ class ChatCompletionService:
         retrieval = await self.document_service.search_documents_with_metrics(
             query=query,
             limit=settings.RAG_RETRIEVAL_LIMIT,
+            knowledge_base=knowledge_base,
         )
         messages = build_rag_messages(chat_request.messages, retrieval.results)
 
@@ -135,6 +147,7 @@ class ChatCompletionService:
             "RAG retrieval completed",
             model=chat_request.model,
             provider_model=llm_model.provider_model,
+            knowledge_base=knowledge_base.public_id if knowledge_base is not None else None,
             chunks_count=len(retrieval.results),
             document_ids=sorted({result.document_id for result in retrieval.results}),
             embedding_ms=retrieval.timings.embedding_ms,
@@ -151,6 +164,21 @@ class ChatCompletionService:
             retrieval=retrieval,
             started_at=started_at,
         )
+
+    async def _resolve_knowledge_base(
+        self, knowledge_base_id: "UUID | None"
+    ) -> "KnowledgeBaseModel | None":
+        """
+        Resolve the knowledge base requested in the chat request body. ``None`` means no
+        retrieval; an unknown id is a client error.
+        """
+        if knowledge_base_id is None or self.knowledge_base_service is None:
+            return None
+
+        knowledge_base = await self.knowledge_base_service.get_by_id_or_none(knowledge_base_id)
+        if knowledge_base is None:
+            raise BadRequestError("Knowledge base not found")
+        return knowledge_base
 
     async def stream_completion(
         self,
@@ -406,7 +434,7 @@ class ChatCompletionService:
             "Chat completion timed out",
             model=plan.request.model,
             provider_model=plan.llm_model.provider_model,
-            timeout_seconds=settings.LLM_TIMEOUT_SECONDS,
+            timeout_seconds=provider_config_for_model(plan.llm_model).timeout_seconds,
             chunks_count=len(plan.retrieval.results),
             embedding_ms=plan.retrieval.timings.embedding_ms,
             qdrant_search_ms=plan.retrieval.timings.qdrant_search_ms,
@@ -727,22 +755,7 @@ def provider_config_for_model(llm_model: LlmModel) -> ProviderConfig:
     Resolve the provider connection config for a model, falling back to the
     environment-configured default provider when the model has no provider record.
     """
-    provider = llm_model.inference_provider
-    if provider is None:
-        return default_provider_config()
-
-    return ProviderConfig(
-        base_url=provider.base_url,
-        api_key=provider.api_key,
-        timeout_seconds=(
-            provider.timeout_seconds
-            if provider.timeout_seconds is not None
-            else settings.LLM_TIMEOUT_SECONDS
-        ),
-        max_retries=(
-            provider.max_retries if provider.max_retries is not None else settings.LLM_MAX_RETRIES
-        ),
-    )
+    return resolve_provider_config(llm_model.inference_provider)
 
 
 def get_query_length(chat_request: ChatCompletionRequest) -> int | None:

@@ -12,8 +12,8 @@ from rag_service.routes import routes_register
 configure_logging()
 
 app = FastAPI(
-    title="RAG Service API",
-    version="0.1.0",
+    title="Knowledge Gateway API",
+    version="0.2.1",
     docs_url="/docs/swagger",
     openapi_url="/openapi.json",
     root_path=settings.ROOT_PATH,

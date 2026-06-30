@@ -12,6 +12,9 @@ http:
       - name: file
         type: text
         value: ""
+      - name: knowledge_base_id
+        type: text
+        value: "{{KNOWLEDGE_BASE_ID}}"
   auth: inherit
 
 settings:

@@ -15,6 +15,7 @@ def test_llm_model_schema_validates_model() -> None:
         provider_model="llama3.1:8b",
         context_window_tokens=8192,
         max_completion_tokens=1024,
+        provider_id=uuid4(),
         description="Fast assistant model",
         created_at=created_at,
         updated_at=created_at,

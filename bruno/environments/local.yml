@@ -12,3 +12,5 @@ variables:
     name: API_KEY_ID
   - secret: true
     name: LLM_MODEL_ID
+  - secret: true
+    name: KNOWLEDGE_BASE_ID

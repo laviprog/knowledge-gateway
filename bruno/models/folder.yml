@@ -4,6 +4,4 @@ info:
   seq: 5
 
 request:
-  auth:
-    type: bearer
-    token: "{{API_KEY}}"
+  auth: inherit

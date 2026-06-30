@@ -12,6 +12,7 @@ from rag_service.exceptions.responses import (
     internal_server_error_response,
     validation_error_response,
 )
+from rag_service.knowledge_bases.dependencies import KnowledgeBaseServiceDep
 from rag_service.llm_models.dependencies import LlmModelServiceDep
 from rag_service.redis.rate_limiter import is_rate_limited
 from rag_service.security.dependencies import AdminApiKeyDep, UserApiKeyDep
@@ -54,6 +55,7 @@ async def create_chat_completion(
     auth_context: UserApiKeyDep,
     document_service: DocumentServiceDep,
     llm_model_service: LlmModelServiceDep,
+    knowledge_base_service: KnowledgeBaseServiceDep,
     request_log_service: ChatCompletionRequestLogServiceDep,
 ) -> ChatCompletionResponse | StreamingResponse | JSONResponse:
     if await is_rate_limited(auth_context.user_id, auth_context.requests_per_minute):
@@ -68,6 +70,7 @@ async def create_chat_completion(
         completion_service=ChatCompletionService(
             document_service=document_service,
             llm_model_service=llm_model_service,
+            knowledge_base_service=knowledge_base_service,
         ),
         request_log_service=request_log_service,
     )

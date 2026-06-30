@@ -19,7 +19,7 @@ class OpenAIChatClient:
     OpenAI-compatible chat client.
     """
 
-    def __init__(self, config: ProviderConfig | None = None):
+    def __init__(self, config: ProviderConfig):
         self.client = get_llm_client(config)
 
     async def stream_chat(
