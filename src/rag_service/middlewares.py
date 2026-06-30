@@ -9,6 +9,9 @@ from rag_service.utils import generate_uuid
 
 log = get_log(__name__)
 
+# Frequently-polled endpoints excluded from request logging to avoid log spam.
+_SILENT_PATHS = frozenset({"/metrics", "/healthcheck", "/healthcheck/ready"})
+
 
 class LogMiddleware(BaseHTTPMiddleware):
     """
@@ -18,6 +21,9 @@ class LogMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request, call_next):
+        if request.url.path in _SILENT_PATHS:
+            return await call_next(request)
+
         correlation_id = request.headers.get("X-Request-Id") or generate_uuid()
         direct_ip = request.client.host if request.client else None
         if direct_ip and direct_ip in settings.TRUSTED_PROXY_IPS:

@@ -61,7 +61,7 @@ services:
     networks:
       - rag-service-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -84,6 +84,68 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: unless-stopped
+
+  # ---- Observability stack (opt-in: `docker compose --profile monitoring up -d`) ----
+
+  prometheus:
+    image: prom/prometheus:v3.5.4
+    profiles: [ "monitoring" ]
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./data/prometheus:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks:
+      - rag-service-network
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.6.11
+    profiles: [ "monitoring" ]
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./docker/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - ./data/loki:/loki
+    ports:
+      - "127.0.0.1:3100:3100"
+    networks:
+      - rag-service-network
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:3.6.11
+    profiles: [ "monitoring" ]
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./docker/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - rag-service-network
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.6.16
+    profiles: [ "monitoring" ]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./data/grafana:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - rag-service-network
+    depends_on:
+      - prometheus
+      - loki
     restart: unless-stopped
 
 networks:
