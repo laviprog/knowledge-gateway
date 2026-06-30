@@ -8,6 +8,7 @@ from uuid import UUID
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 from sqlalchemy import func, select
 
+from rag_service import metrics as prom_metrics
 from rag_service.chats.models import (
     ChatCompletionRequestLogModel,
     ChatCompletionRequestStatus,
@@ -378,6 +379,7 @@ class ChatCompletionService:
             total_ms=metrics.total_ms,
         )
 
+        self._record_metrics(plan=plan, metrics=metrics, outcome="succeeded")
         return metrics
 
     def log_timeout(self, plan: ChatCompletionPlan) -> ChatCompletionMetrics:
@@ -405,7 +407,38 @@ class ChatCompletionService:
             total_ms=metrics.total_ms,
         )
 
+        prom_metrics.chat_completions_total.labels(
+            model=plan.request.model, outcome="timeout"
+        ).inc()
         return metrics
+
+    @staticmethod
+    def _record_metrics(
+        plan: ChatCompletionPlan,
+        metrics: ChatCompletionMetrics,
+        outcome: str,
+    ) -> None:
+        """
+        Record Prometheus metrics for a finished chat completion.
+        """
+        model = plan.request.model
+        prom_metrics.chat_completions_total.labels(model=model, outcome=outcome).inc()
+        prom_metrics.rag_retrieval_seconds.observe(plan.retrieval.timings.total_ms / 1000)
+
+        if metrics.llm_ttfb_ms is not None:
+            prom_metrics.chat_ttfb_seconds.labels(model=model).observe(metrics.llm_ttfb_ms / 1000)
+        if metrics.llm_generation_ms is not None:
+            prom_metrics.chat_generation_seconds.labels(model=model).observe(
+                metrics.llm_generation_ms / 1000
+            )
+        if metrics.prompt_tokens is not None:
+            prom_metrics.chat_tokens_total.labels(model=model, kind="prompt").inc(
+                metrics.prompt_tokens
+            )
+        if metrics.completion_tokens is not None:
+            prom_metrics.chat_tokens_total.labels(model=model, kind="completion").inc(
+                metrics.completion_tokens
+            )
 
 
 class ChatCompletionRequestLogService(

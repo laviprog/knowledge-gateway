@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     Application settings loaded from environment variables or a .env file.
     """
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     LOG_LEVEL: str = "DEBUG"  # DEBUG | INFO | WARNING | ERROR | CRITICAL
     ENV: str = "dev"  # dev | prod
