@@ -1,33 +1,48 @@
+from dataclasses import dataclass
+
 from openai import AsyncOpenAI
 
-from rag_service.config import settings
 
-_client: AsyncOpenAI | None = None
-
-
-def get_llm_client() -> AsyncOpenAI:
+@dataclass(frozen=True)
+class ProviderConfig:
     """
-    Return a shared OpenAI-compatible client.
+    Connection settings for an OpenAI-compatible provider endpoint.
     """
-    global _client
-    if _client is None:
-        _client = AsyncOpenAI(
-            base_url=settings.LLM_BASE_URL,
+
+    base_url: str
+    api_key: str | None
+    timeout_seconds: float
+    max_retries: int
+
+
+# Clients are reused per distinct connection config so a single endpoint shares one client
+# (and its connection pool) across every model that points at it.
+_clients: dict[ProviderConfig, AsyncOpenAI] = {}
+
+
+def get_llm_client(config: ProviderConfig) -> AsyncOpenAI:
+    """
+    Return a shared OpenAI-compatible client for the given provider config.
+    """
+    client = _clients.get(config)
+    if client is None:
+        client = AsyncOpenAI(
+            base_url=config.base_url,
             # Some OpenAI-compatible servers require no key; the SDK still needs a non-empty value.
-            api_key=settings.LLM_API_KEY or "not-needed",
-            timeout=settings.LLM_TIMEOUT_SECONDS,
+            api_key=config.api_key or "not-needed",
+            timeout=config.timeout_seconds,
+            # Retries transient errors (connection, 408/409/429, 5xx) with exponential backoff.
+            max_retries=config.max_retries,
         )
+        _clients[config] = client
 
-    return _client
+    return client
 
 
-async def close_llm_client() -> None:
+async def close_llm_clients() -> None:
     """
-    Close the shared OpenAI-compatible client.
+    Close all cached OpenAI-compatible clients.
     """
-    global _client
-    if _client is None:
-        return
-
-    await _client.close()
-    _client = None
+    for client in _clients.values():
+        await client.close()
+    _clients.clear()

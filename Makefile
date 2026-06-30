@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help setup hooks compose-config build up down logs ps migrate migration-heads test coverage check format
+.PHONY: help setup hooks compose-config build up down logs ps monitoring-up monitoring-down migrate migration-heads test coverage check format
 
 help:
 	@echo "Available targets:"
@@ -12,6 +12,8 @@ help:
 	@echo "  down            Stop services"
 	@echo "  logs            Follow container logs"
 	@echo "  ps              Show running containers"
+	@echo "  monitoring-up   Start app + observability stack (Prometheus/Loki/Grafana)"
+	@echo "  monitoring-down Stop all services including monitoring"
 	@echo "  migrate         Apply database migrations"
 	@echo "  migration-heads Show Alembic migration heads"
 	@echo "  test            Run test suite"
@@ -42,6 +44,12 @@ logs:
 
 ps:
 	docker compose ps
+
+monitoring-up:
+	docker compose --profile monitoring up -d
+
+monitoring-down:
+	docker compose --profile monitoring down
 
 migrate:
 	uv run alembic upgrade head

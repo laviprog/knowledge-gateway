@@ -18,7 +18,7 @@ http:
           },
           {
             "role": "user",
-            "content": "Привет! Расскажи о себе."
+            "content": "Что у тебя в базе знаний?"
           }
         ],
         "stream": true,
@@ -26,7 +26,8 @@ http:
           "include_usage": true
         },
         "temperature": 0.3,
-        "max_completion_tokens": 1024
+        "max_completion_tokens": 1024,
+        "knowledge_base_id": "{{KNOWLEDGE_BASE_ID}}"
       }
   auth: inherit
 

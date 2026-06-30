@@ -31,6 +31,9 @@ class ChatCompletionRequest(BaseSchema):
     temperature: float | None = Field(default=None, ge=0, le=2)
     top_p: float | None = Field(default=None, gt=0, le=1)
     max_completion_tokens: int | None = Field(default=None, gt=0)
+    # Non-standard extension (clients pass it via OpenAI SDK `extra_body`). Selects the
+    # knowledge base for RAG retrieval; when omitted, the request runs without retrieval.
+    knowledge_base_id: UUID | None = None
 
     model_config: ClassVar[ConfigDict] = ConfigDict(from_attributes=True, extra="ignore")
 
@@ -106,6 +109,31 @@ class ChatCompletionRequestLogsList(BaseSchema):
     total: int
     limit: int
     offset: int
+
+
+class ChatCompletionStatusCount(BaseSchema):
+    status: ChatCompletionRequestStatus
+    count: int
+
+
+class ChatCompletionModelStats(BaseSchema):
+    model_public_id: str
+    requests: int
+    total_tokens: int | None
+    avg_total_ms: float | None
+
+
+class ChatCompletionStats(BaseSchema):
+    total_requests: int
+    by_status: list[ChatCompletionStatusCount]
+    prompt_tokens_total: int | None
+    completion_tokens_total: int | None
+    total_tokens_total: int | None
+    avg_embedding_ms: float | None
+    avg_llm_ttfb_ms: float | None
+    avg_llm_generation_ms: float | None
+    avg_total_ms: float | None
+    by_model: list[ChatCompletionModelStats]
 
 
 OpenAIChunk = dict[str, Any]

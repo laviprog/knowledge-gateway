@@ -1,0 +1,26 @@
+info:
+  name: Create an embedding model
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{API_BASE_URL}}/embedding-models"
+  body:
+    type: json
+    data: |-
+      {
+        "public_id": "bge-embed",
+        "provider_model": "bge-m3:567m",
+        "dimension": 1028,
+        "collection_name": "...",
+        "provider_id": "...",
+        "description": "smth"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

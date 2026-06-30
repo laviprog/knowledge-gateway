@@ -3,11 +3,15 @@ from typing import TYPE_CHECKING, Any, cast
 
 import openai
 
+from rag_service import metrics
 from rag_service.llm.base import ChatChunk, ProviderTimeoutError
-from rag_service.llm.client import get_llm_client
+from rag_service.llm.client import ProviderConfig, get_llm_client
+from rag_service.log_config import get_log
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletionMessageParam
+
+log = get_log(__name__)
 
 
 class OpenAIChatClient:
@@ -15,8 +19,8 @@ class OpenAIChatClient:
     OpenAI-compatible chat client.
     """
 
-    def __init__(self):
-        self.client = get_llm_client()
+    def __init__(self, config: ProviderConfig):
+        self.client = get_llm_client(config)
 
     async def stream_chat(
         self,
@@ -38,6 +42,13 @@ class OpenAIChatClient:
 
         if max_completion_tokens is not None:
             params["max_completion_tokens"] = max_completion_tokens
+
+        log.debug(
+            "Requesting chat completion stream",
+            model=model,
+            messages_count=len(messages),
+            **params,
+        )
 
         try:
             stream = await self.client.chat.completions.create(
@@ -69,5 +80,16 @@ class OpenAIChatClient:
                     prompt_tokens=prompt_tokens,
                     completion_tokens=completion_tokens,
                 )
+        # Transient failures that survived the SDK's automatic retries are surfaced as a
+        # provider-unavailable error (mapped to 503), not a generic 500.
         except openai.APITimeoutError as exc:
+            metrics.llm_provider_errors_total.labels(type="timeout").inc()
             raise ProviderTimeoutError("LLM request timed out") from exc
+        except openai.APIConnectionError as exc:
+            metrics.llm_provider_errors_total.labels(type="connection").inc()
+            raise ProviderTimeoutError("LLM provider connection failed") from exc
+        except openai.APIStatusError as exc:
+            if exc.status_code >= 500:
+                metrics.llm_provider_errors_total.labels(type="server").inc()
+                raise ProviderTimeoutError("LLM provider returned a server error") from exc
+            raise

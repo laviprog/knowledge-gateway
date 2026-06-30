@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     Application settings loaded from environment variables or a .env file.
     """
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     LOG_LEVEL: str = "DEBUG"  # DEBUG | INFO | WARNING | ERROR | CRITICAL
     ENV: str = "dev"  # dev | prod
@@ -15,6 +15,10 @@ class Settings(BaseSettings):
 
     API_KEY_PEPPER: str  # Used for hashing API keys — must be set explicitly, no default
     API_KEY_DEFAULT_PREFIX: str = "syn_rag"  # Default prefix for generated API keys
+
+    # Symmetric key used to encrypt provider API keys at rest (any string; a Fernet key is
+    # derived from it). Required only when a provider record stores an api_key.
+    PROVIDER_SECRET_KEY: str | None = None
 
     # Comma-separated list of trusted reverse-proxy IPs whose X-Forwarded-For header is trusted
     TRUSTED_PROXY_IPS: list[str] = []
@@ -45,13 +49,6 @@ class Settings(BaseSettings):
     # Qdrant configuration
     QDRANT_URL: str
     QDRANT_API_KEY: str
-    QDRANT_COLLECTION_NAME: str = "global_knowledge_base"
-
-    # LLM provider configuration (OpenAI-compatible endpoint)
-    LLM_BASE_URL: str
-    LLM_API_KEY: str | None = None
-    LLM_EMBEDDING_MODEL: str
-    LLM_TIMEOUT_SECONDS: float = 30
 
     @property
     def _DB_URL_BASE(self) -> str:

@@ -102,6 +102,7 @@ async def create_llm_model(
         provider_model=model_create.provider_model,
         context_window_tokens=model_create.context_window_tokens,
         max_completion_tokens=model_create.max_completion_tokens,
+        provider_id=model_create.provider_id,
         description=model_create.description,
     )
     return LlmModel.model_validate(model)
@@ -134,6 +135,7 @@ async def update_llm_model(
         provider_model=model_update.provider_model,
         context_window_tokens=model_update.context_window_tokens,
         max_completion_tokens=model_update.max_completion_tokens,
+        provider_id=model_update.provider_id,
         description=model_update.description,
     )
     return LlmModel.model_validate(model)

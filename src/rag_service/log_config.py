@@ -135,4 +135,4 @@ def configure() -> None:
         Production.configure()
     else:
         Development.configure()
-    structlog.contextvars.bind_contextvars(service="rag-service")
+    structlog.contextvars.bind_contextvars(service="knowledge-gateway")

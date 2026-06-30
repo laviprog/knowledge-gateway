@@ -27,6 +27,7 @@
 - [Development](#development)
 - [Testing](#testing)
 - [API Overview](#api-overview)
+- [Observability](#observability)
 - [Roadmap](#roadmap)
 - [License](#license)
 
@@ -78,10 +79,9 @@ The service has three main responsibilities:
 
 - Docker and Docker Compose
 - `uv` for local development
-- An OpenAI-compatible API reachable at `LLM_BASE_URL` (OpenAI, Azure OpenAI, vLLM, Ollama's `/v1`,
-  etc.) that serves:
-    - the embedding model set by `LLM_EMBEDDING_MODEL`
-    - any chat models you plan to register in `llm_models`
+- One or more OpenAI-compatible APIs (OpenAI, Azure OpenAI, vLLM, Ollama's `/v1`, etc.) that serve
+  your embedding and chat models. Endpoints and credentials are configured in the database as
+  **providers** (via the admin API) after first launch — not in `.env`.
 
 ### Quick Start
 
@@ -89,7 +89,7 @@ The service has three main responsibilities:
 # 1. Clone and configure
 cp .env.example .env
 # Edit .env — at minimum set: POSTGRES_PASSWORD, QDRANT_API_KEY, API_KEY_PEPPER,
-#             BOOTSTRAP_ADMIN_API_KEY, LLM_BASE_URL, and LLM_EMBEDDING_MODEL
+#             PROVIDER_SECRET_KEY, and BOOTSTRAP_ADMIN_API_KEY
 
 # 2. Build and start all services
 make build
@@ -104,6 +104,22 @@ The API will be available at `http://127.0.0.1:8080/api/v1`.
 Interactive API docs (Scalar) at `http://127.0.0.1:8080/api/v1/docs` (requires `ENV=dev`).
 
 Docker Compose runs database migrations automatically before the API starts.
+
+### First-time setup
+
+The system ships with no inference configuration — an admin creates it via the admin API
+(`ENV=dev` exposes these routes in the docs) in this order:
+
+1. **Provider** (`POST /providers`) — base URL + (encrypted) API key of an OpenAI-compatible
+   endpoint.
+2. **Embedding model** (`POST /embedding-models`) — `provider_model` + provider; owns a Qdrant
+   collection.
+3. **Knowledge base** (`POST /knowledge-bases`) — bound to an embedding model; documents are
+   uploaded into it and retrieved from it.
+4. **LLM model** (`POST /llm-models`) — `provider_model` + provider; exposed via `GET /models`.
+
+Clients pick a knowledge base per request by passing `knowledge_base_id` in the chat completion
+body (OpenAI SDK `extra_body`); omitting it runs the completion without retrieval.
 
 ### Useful Commands
 
@@ -124,35 +140,31 @@ template with comments.
 
 **Required:**
 
-| Variable          | Description                                                                                                                       |
-|-------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| `API_KEY_PEPPER`  | Secret used when hashing API keys — generate with `secrets.token_hex(32)` and never change it in production once keys are created |
-| `POSTGRES_*`      | PostgreSQL connection settings (`HOST`, `PORT`, `DB`, `USER`, `PASSWORD`)                                                         |
-| `QDRANT_URL`      | Qdrant service URL                                                                                                                |
-| `QDRANT_API_KEY`  | Qdrant authentication key                                                                                                         |
-| `LLM_BASE_URL`    | OpenAI-compatible API base URL (e.g. `https://api.openai.com/v1`, or `.../v1` for Ollama/vLLM)                                    |
-| `LLM_EMBEDDING_MODEL` | Embedding model used for chunk indexing and query encoding (must match the Qdrant collection's vector size)                   |
+| Variable              | Description                                                                                                                       |
+|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `API_KEY_PEPPER`      | Secret used when hashing API keys — generate with `secrets.token_hex(32)` and never change it in production once keys are created |
+| `POSTGRES_*`          | PostgreSQL connection settings (`HOST`, `PORT`, `DB`, `USER`, `PASSWORD`)                                                         |
+| `QDRANT_URL`          | Qdrant service URL                                                                                                                |
+| `QDRANT_API_KEY`      | Qdrant authentication key                                                                                                         |
 
 **Optional / with defaults:**
 
-| Variable                                 | Default                 | Description                                                         |
-|------------------------------------------|-------------------------|---------------------------------------------------------------------|
-| `ENV`                                    | `prod`                  | Set to `dev` to enable admin routes in API docs                     |
-| `ROOT_PATH`                              | `/api/v1`               | API root path when running behind a reverse proxy                   |
-| `REDIS_URL`                              | `redis://redis:6379`    | Redis URL for rate limiting counters                                |
-| `RATE_LIMIT_DEFAULT_REQUESTS_PER_MINUTE` | `60`                    | Default rate limit for new users (`0` = unlimited)                  |
-| `TRUSTED_PROXY_IPS`                      | _(empty)_               | Comma-separated IPs whose `X-Forwarded-For` header is trusted       |
-| `QDRANT_COLLECTION_NAME`                 | `global_knowledge_base` | Qdrant collection for document chunks                               |
-| `LLM_API_KEY`                            | _(empty)_               | API key sent to the LLM provider (optional for keyless local servers) |
-| `LLM_TIMEOUT_SECONDS`                    | `30`                    | Timeout for LLM chat and embedding requests                         |
-| `BOOTSTRAP_ADMIN_NAME`                   | `default_admin`         | Username for the auto-created admin account                         |
-| `BOOTSTRAP_ADMIN_API_KEY_NAME`           | `admin1`                | API key name for the bootstrap admin key                            |
-| `BOOTSTRAP_ADMIN_API_KEY`                | _(auto-generated)_      | Fixed bootstrap admin key — if unset, a key is generated and logged |
-| `DOCUMENT_UPLOAD_MAX_BYTES`              | `10485760` (10 MB)      | Maximum size for uploaded documents                                 |
-| `DOCUMENT_CHUNK_MAX_CHARS`               | `2500`                  | Maximum characters per document chunk                               |
-| `DOCUMENT_CHUNK_OVERLAP_CHARS`           | `250`                   | Overlap between consecutive chunks                                  |
-| `RAG_RETRIEVAL_LIMIT`                    | `10`                    | Number of chunks retrieved per chat request                         |
-| `RAG_CONTEXT_MAX_CHARS`                  | `12000`                 | Max total context characters injected into the prompt               |
+| Variable                                 | Default                 | Description                                                           |
+|------------------------------------------|-------------------------|-----------------------------------------------------------------------|
+| `ENV`                                    | `prod`                  | Set to `dev` to enable admin routes in API docs                       |
+| `ROOT_PATH`                              | `/api/v1`               | API root path when running behind a reverse proxy                     |
+| `REDIS_URL`                              | `redis://redis:6379`    | Redis URL for rate limiting counters                                  |
+| `RATE_LIMIT_DEFAULT_REQUESTS_PER_MINUTE` | `60`                    | Default rate limit for new users (`0` = unlimited)                    |
+| `TRUSTED_PROXY_IPS`                      | _(empty)_               | Comma-separated IPs whose `X-Forwarded-For` header is trusted         |
+| `PROVIDER_SECRET_KEY`                    | _(empty)_               | Secret used to encrypt provider API keys at rest (required only when a provider record stores an `api_key`) |
+| `BOOTSTRAP_ADMIN_NAME`                   | `default_admin`         | Username for the auto-created admin account                           |
+| `BOOTSTRAP_ADMIN_API_KEY_NAME`           | `admin1`                | API key name for the bootstrap admin key                              |
+| `BOOTSTRAP_ADMIN_API_KEY`                | _(auto-generated)_      | Fixed bootstrap admin key — if unset, a key is generated and logged   |
+| `DOCUMENT_UPLOAD_MAX_BYTES`              | `10485760` (10 MB)      | Maximum size for uploaded documents                                   |
+| `DOCUMENT_CHUNK_MAX_CHARS`               | `2500`                  | Maximum characters per document chunk                                 |
+| `DOCUMENT_CHUNK_OVERLAP_CHARS`           | `250`                   | Overlap between consecutive chunks                                    |
+| `RAG_RETRIEVAL_LIMIT`                    | `10`                    | Number of chunks retrieved per chat request                           |
+| `RAG_CONTEXT_MAX_CHARS`                  | `12000`                 | Max total context characters injected into the prompt                 |
 
 ## Development
 
@@ -241,24 +253,44 @@ are always unlimited.
 
 **Admin endpoints** (visible in docs when `ENV=dev`):
 
-| Resource             | Operations                                          |
-|----------------------|-----------------------------------------------------|
-| Users                | Create, list, get, update, delete                   |
-| API keys             | Create, list per user                               |
-| LLM models           | Create, list, get, update, delete                   |
-| Documents            | Upload, list, get, search, delete                   |
-| Chat completion logs | List with filters (user, model, status, date range) |
+| Resource             | Operations                                                           |
+|----------------------|----------------------------------------------------------------------|
+| Users                | Create, list, get, update, delete                                    |
+| API keys             | Create, list per user                                                |
+| LLM models           | Create, list, get, update, delete                                    |
+| Documents            | Upload, list, get, search, delete                                    |
+| Chat completion logs | List with filters + aggregated `/stats` (tokens, latency, per-model) |
 
 Admin list endpoints (users, API keys, LLM models, documents, chat completion logs) are paginated
 via `limit` (1–100, default 50) and `offset` (default 0) query parameters and return `total`,
 `limit`, and `offset` alongside the items.
 
-## Roadmap
+## Observability
 
-- [ ] Add summary usage endpoint for aggregate request, token, latency, and error metrics.
-- [ ] Add PostgreSQL integration tests for migrations, relationships, and soft delete behaviour.
-- [ ] Improve streaming interruption handling with explicit integration coverage.
-- [ ] Support multiple knowledge bases per user or organisation (multi-tenancy).
+The service exposes a Prometheus metrics endpoint and ships structured JSON logs, with an optional
+Grafana/Loki stack for dashboards and log search.
+
+- **`GET /metrics`** — Prometheus exposition. HTTP RED metrics (rate/errors/duration per route) plus
+  custom collectors: `rag_chat_ttfb_seconds`, `rag_chat_generation_seconds`,
+  `rag_retrieval_seconds`,
+  `rag_chat_tokens_total`, `rag_chat_completions_total`, `rag_llm_provider_errors_total`.
+- **Logs** — structlog JSON to stdout, correlated by `correlation_id` (also returned as the
+  `X-Request-Id` response header).
+
+Start the bundled monitoring stack (opt-in via the `monitoring` compose profile):
+
+```bash
+make monitoring-up      # docker compose --profile monitoring up -d
+```
+
+| Service    | URL                   | Purpose                                                |
+|------------|-----------------------|--------------------------------------------------------|
+| Prometheus | http://127.0.0.1:9090 | Scrapes `api:8080/metrics` every 15s                   |
+| Loki       | http://127.0.0.1:3100 | Log storage (fed by Promtail)                          |
+| Grafana    | http://127.0.0.1:3000 | Dashboards + log search (login from `GRAFANA_ADMIN_*`) |
+
+Grafana is pre-provisioned with Prometheus + Loki datasources and a "RAG Service Overview"
+dashboard. Promtail tails container stdout via the Docker socket and parses the JSON logs.
 
 ## License
 

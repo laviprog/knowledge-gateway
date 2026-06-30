@@ -9,6 +9,7 @@ from rag_service.schema import BaseSchema, PaginatedList
 
 
 class DocumentCreate(BaseSchema):
+    knowledge_base_id: UUID
     title: str = Field(min_length=1, max_length=255)
     content: str = Field(min_length=1)
     source: str | None = Field(default=None, max_length=512)
@@ -17,6 +18,7 @@ class DocumentCreate(BaseSchema):
 
 class Document(BaseSchema):
     id: UUID
+    knowledge_base_id: UUID
     title: str
     content: str
     content_hash: str
@@ -36,6 +38,7 @@ class DocumentsList(PaginatedList):
 
 
 class DocumentSearchQuery(BaseSchema):
+    knowledge_base_id: UUID
     query: str = Field(min_length=1)
     limit: int = Field(default=5, ge=1, le=20)
 

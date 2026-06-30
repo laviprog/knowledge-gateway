@@ -2,12 +2,13 @@ import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 from sqlalchemy import func, select
 
+from rag_service import metrics as prom_metrics
 from rag_service.chats.models import (
     ChatCompletionRequestLogModel,
     ChatCompletionRequestStatus,
@@ -15,19 +16,25 @@ from rag_service.chats.models import (
 from rag_service.chats.repositories import ChatCompletionRequestLogRepository
 from rag_service.config import settings
 from rag_service.documents.services import DocumentSearchWithMetrics, DocumentService
+from rag_service.exceptions import BadRequestError
 from rag_service.llm.base import ChatChunk, ChatClient, ProviderTimeoutError
 from rag_service.llm.chat import OpenAIChatClient
+from rag_service.llm.client import ProviderConfig
 from rag_service.llm_models.models import LlmModel
 from rag_service.llm_models.services import LlmModelService
 from rag_service.log_config import get_log
+from rag_service.providers.config import resolve_provider_config
 from rag_service.utils import generate_uuid
 
 from .prompts import build_rag_messages, get_latest_user_message
 from .schema import (
     ChatCompletionChoice,
     ChatCompletionMessage,
+    ChatCompletionModelStats,
     ChatCompletionRequest,
     ChatCompletionResponse,
+    ChatCompletionStats,
+    ChatCompletionStatusCount,
     ChatCompletionUsage,
 )
 from .sse import build_chunk, build_usage_chunk, format_sse_event
@@ -36,6 +43,9 @@ log = get_log(__name__)
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
+
+    from rag_service.knowledge_bases.models import KnowledgeBaseModel
+    from rag_service.knowledge_bases.services import KnowledgeBaseService
 
 
 class ChatCompletionTimeoutError(Exception):
@@ -92,11 +102,18 @@ class ChatCompletionService:
         self,
         document_service: DocumentService,
         llm_model_service: LlmModelService,
+        knowledge_base_service: "KnowledgeBaseService | None" = None,
         chat_client: ChatClient | None = None,
     ) -> None:
         self.document_service = document_service
         self.llm_model_service = llm_model_service
-        self.chat_client = chat_client or OpenAIChatClient()
+        # Resolves the default knowledge base for models without one. Optional so the service
+        # can be exercised without retrieval wiring (tests/DI).
+        self.knowledge_base_service = knowledge_base_service
+        # When provided (tests/DI), the injected client wins. Otherwise a client is resolved
+        # per request from the model's provider, so different models can target different
+        # OpenAI-compatible endpoints.
+        self.chat_client = chat_client
 
     async def prepare_completion(
         self,
@@ -107,11 +124,13 @@ class ChatCompletionService:
         """
         started_at = time.perf_counter()
         llm_model = await self.llm_model_service.get_by_public_id_or_raise(chat_request.model)
+        knowledge_base = await self._resolve_knowledge_base(chat_request.knowledge_base_id)
 
         log.info(
             "Chat completion started",
             model=chat_request.model,
             provider_model=llm_model.provider_model,
+            knowledge_base=knowledge_base.public_id if knowledge_base is not None else None,
             messages_count=len(chat_request.messages),
             stream=chat_request.stream,
         )
@@ -120,6 +139,7 @@ class ChatCompletionService:
         retrieval = await self.document_service.search_documents_with_metrics(
             query=query,
             limit=settings.RAG_RETRIEVAL_LIMIT,
+            knowledge_base=knowledge_base,
         )
         messages = build_rag_messages(chat_request.messages, retrieval.results)
 
@@ -127,6 +147,7 @@ class ChatCompletionService:
             "RAG retrieval completed",
             model=chat_request.model,
             provider_model=llm_model.provider_model,
+            knowledge_base=knowledge_base.public_id if knowledge_base is not None else None,
             chunks_count=len(retrieval.results),
             document_ids=sorted({result.document_id for result in retrieval.results}),
             embedding_ms=retrieval.timings.embedding_ms,
@@ -143,6 +164,21 @@ class ChatCompletionService:
             retrieval=retrieval,
             started_at=started_at,
         )
+
+    async def _resolve_knowledge_base(
+        self, knowledge_base_id: "UUID | None"
+    ) -> "KnowledgeBaseModel | None":
+        """
+        Resolve the knowledge base requested in the chat request body. ``None`` means no
+        retrieval; an unknown id is a client error.
+        """
+        if knowledge_base_id is None or self.knowledge_base_service is None:
+            return None
+
+        knowledge_base = await self.knowledge_base_service.get_by_id_or_none(knowledge_base_id)
+        if knowledge_base is None:
+            raise BadRequestError("Knowledge base not found")
+        return knowledge_base
 
     async def stream_completion(
         self,
@@ -329,7 +365,10 @@ class ChatCompletionService:
         max_completion_tokens = (
             plan.request.max_completion_tokens or plan.llm_model.max_completion_tokens
         )
-        async for chunk in self.chat_client.stream_chat(
+        chat_client = self.chat_client or OpenAIChatClient(
+            provider_config_for_model(plan.llm_model)
+        )
+        async for chunk in chat_client.stream_chat(
             model=plan.llm_model.provider_model,
             messages=plan.messages,
             temperature=plan.request.temperature,
@@ -375,6 +414,7 @@ class ChatCompletionService:
             total_ms=metrics.total_ms,
         )
 
+        self._record_metrics(plan=plan, metrics=metrics, outcome="succeeded")
         return metrics
 
     def log_timeout(self, plan: ChatCompletionPlan) -> ChatCompletionMetrics:
@@ -394,7 +434,7 @@ class ChatCompletionService:
             "Chat completion timed out",
             model=plan.request.model,
             provider_model=plan.llm_model.provider_model,
-            timeout_seconds=settings.LLM_TIMEOUT_SECONDS,
+            timeout_seconds=provider_config_for_model(plan.llm_model).timeout_seconds,
             chunks_count=len(plan.retrieval.results),
             embedding_ms=plan.retrieval.timings.embedding_ms,
             qdrant_search_ms=plan.retrieval.timings.qdrant_search_ms,
@@ -402,7 +442,38 @@ class ChatCompletionService:
             total_ms=metrics.total_ms,
         )
 
+        prom_metrics.chat_completions_total.labels(
+            model=plan.request.model, outcome="timeout"
+        ).inc()
         return metrics
+
+    @staticmethod
+    def _record_metrics(
+        plan: ChatCompletionPlan,
+        metrics: ChatCompletionMetrics,
+        outcome: str,
+    ) -> None:
+        """
+        Record Prometheus metrics for a finished chat completion.
+        """
+        model = plan.request.model
+        prom_metrics.chat_completions_total.labels(model=model, outcome=outcome).inc()
+        prom_metrics.rag_retrieval_seconds.observe(plan.retrieval.timings.total_ms / 1000)
+
+        if metrics.llm_ttfb_ms is not None:
+            prom_metrics.chat_ttfb_seconds.labels(model=model).observe(metrics.llm_ttfb_ms / 1000)
+        if metrics.llm_generation_ms is not None:
+            prom_metrics.chat_generation_seconds.labels(model=model).observe(
+                metrics.llm_generation_ms / 1000
+            )
+        if metrics.prompt_tokens is not None:
+            prom_metrics.chat_tokens_total.labels(model=model, kind="prompt").inc(
+                metrics.prompt_tokens
+            )
+        if metrics.completion_tokens is not None:
+            prom_metrics.chat_tokens_total.labels(model=model, kind="completion").inc(
+                metrics.completion_tokens
+            )
 
 
 class ChatCompletionRequestLogService(
@@ -521,19 +592,14 @@ class ChatCompletionRequestLogService(
         """
         List usage log rows with basic admin filters.
         """
-        filters: list[ColumnElement[bool]] = [ChatCompletionRequestLogModel.deleted_at.is_(None)]
-        if user_id is not None:
-            filters.append(ChatCompletionRequestLogModel.user_id == user_id)
-        if api_key_id is not None:
-            filters.append(ChatCompletionRequestLogModel.api_key_id == api_key_id)
-        if model is not None:
-            filters.append(ChatCompletionRequestLogModel.model_public_id == model)
-        if status is not None:
-            filters.append(ChatCompletionRequestLogModel.status == status)
-        if date_from is not None:
-            filters.append(ChatCompletionRequestLogModel.created_at >= date_from)
-        if date_to is not None:
-            filters.append(ChatCompletionRequestLogModel.created_at <= date_to)
+        filters = self._build_filters(
+            user_id=user_id,
+            api_key_id=api_key_id,
+            model=model,
+            status=status,
+            date_from=date_from,
+            date_to=date_to,
+        )
 
         statement = (
             select(ChatCompletionRequestLogModel)
@@ -549,6 +615,112 @@ class ChatCompletionRequestLogService(
         result = await self.repository.session.execute(statement)
         count_result = await self.repository.session.execute(count_statement)
         return list(result.scalars().all()), count_result.scalar_one()
+
+    async def get_stats(
+        self,
+        *,
+        user_id: UUID | None = None,
+        api_key_id: UUID | None = None,
+        model: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+    ) -> ChatCompletionStats:
+        """
+        Aggregate usage metrics (totals, token sums/averages, latency averages) over the
+        filtered usage-log rows, plus a per-model breakdown.
+        """
+        model_cls = ChatCompletionRequestLogModel
+        filters = self._build_filters(
+            user_id=user_id,
+            api_key_id=api_key_id,
+            model=model,
+            status=None,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        session = self.repository.session
+
+        totals_statement = select(
+            func.count(),
+            func.sum(model_cls.prompt_tokens),
+            func.sum(model_cls.completion_tokens),
+            func.sum(model_cls.total_tokens),
+            func.avg(model_cls.embedding_ms),
+            func.avg(model_cls.llm_ttfb_ms),
+            func.avg(model_cls.llm_generation_ms),
+            func.avg(model_cls.total_ms),
+        ).where(*filters)
+        totals_row = (await session.execute(totals_statement)).one()
+
+        status_statement = (
+            select(model_cls.status, func.count()).where(*filters).group_by(model_cls.status)
+        )
+        status_rows = (await session.execute(status_statement)).all()
+
+        model_statement = (
+            select(
+                model_cls.model_public_id,
+                func.count(),
+                func.sum(model_cls.total_tokens),
+                func.avg(model_cls.total_ms),
+            )
+            .where(*filters)
+            .group_by(model_cls.model_public_id)
+            .order_by(func.count().desc())
+        )
+        model_rows = (await session.execute(model_statement)).all()
+
+        return ChatCompletionStats(
+            total_requests=totals_row[0],
+            by_status=[
+                ChatCompletionStatusCount(status=status, count=count)
+                for status, count in status_rows
+            ],
+            prompt_tokens_total=_as_int(totals_row[1]),
+            completion_tokens_total=_as_int(totals_row[2]),
+            total_tokens_total=_as_int(totals_row[3]),
+            avg_embedding_ms=_round_or_none(totals_row[4]),
+            avg_llm_ttfb_ms=_round_or_none(totals_row[5]),
+            avg_llm_generation_ms=_round_or_none(totals_row[6]),
+            avg_total_ms=_round_or_none(totals_row[7]),
+            by_model=[
+                ChatCompletionModelStats(
+                    model_public_id=model_public_id,
+                    requests=requests,
+                    total_tokens=_as_int(total_tokens),
+                    avg_total_ms=_round_or_none(avg_total_ms),
+                )
+                for model_public_id, requests, total_tokens, avg_total_ms in model_rows
+            ],
+        )
+
+    @staticmethod
+    def _build_filters(
+        *,
+        user_id: UUID | None,
+        api_key_id: UUID | None,
+        model: str | None,
+        status: ChatCompletionRequestStatus | None,
+        date_from: datetime | None,
+        date_to: datetime | None,
+    ) -> "list[ColumnElement[bool]]":
+        """
+        Build shared WHERE clauses for usage-log queries.
+        """
+        filters: list[ColumnElement[bool]] = [ChatCompletionRequestLogModel.deleted_at.is_(None)]
+        if user_id is not None:
+            filters.append(ChatCompletionRequestLogModel.user_id == user_id)
+        if api_key_id is not None:
+            filters.append(ChatCompletionRequestLogModel.api_key_id == api_key_id)
+        if model is not None:
+            filters.append(ChatCompletionRequestLogModel.model_public_id == model)
+        if status is not None:
+            filters.append(ChatCompletionRequestLogModel.status == status)
+        if date_from is not None:
+            filters.append(ChatCompletionRequestLogModel.created_at >= date_from)
+        if date_to is not None:
+            filters.append(ChatCompletionRequestLogModel.created_at <= date_to)
+        return filters
 
     @staticmethod
     def apply_plan(
@@ -578,6 +750,14 @@ class ChatCompletionRequestLogService(
         request_log.total_ms = metrics.total_ms
 
 
+def provider_config_for_model(llm_model: LlmModel) -> ProviderConfig:
+    """
+    Resolve the provider connection config for a model, falling back to the
+    environment-configured default provider when the model has no provider record.
+    """
+    return resolve_provider_config(llm_model.inference_provider)
+
+
 def get_query_length(chat_request: ChatCompletionRequest) -> int | None:
     """
     Return latest non-empty user message length without storing message content.
@@ -587,3 +767,17 @@ def get_query_length(chat_request: ChatCompletionRequest) -> int | None:
             return len(message.content)
 
     return None
+
+
+def _as_int(value: Any) -> int | None:
+    """
+    Coerce a SQL aggregate (which may be Decimal/None) to an int.
+    """
+    return int(value) if value is not None else None
+
+
+def _round_or_none(value: Any) -> float | None:
+    """
+    Coerce a SQL average (which may be Decimal/None) to a rounded float.
+    """
+    return round(float(value), 2) if value is not None else None

@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime
 from uuid import UUID
 
@@ -8,26 +7,28 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from rag_service.chats.dependencies import ChatCompletionRequestLogServiceDep
 from rag_service.chats.models import ChatCompletionRequestStatus
 from rag_service.documents.dependencies import DocumentServiceDep
-from rag_service.exceptions import BadRequestError, NotFoundError
 from rag_service.exceptions.responses import (
     auth_responses,
     internal_server_error_response,
     validation_error_response,
 )
+from rag_service.knowledge_bases.dependencies import KnowledgeBaseServiceDep
 from rag_service.llm_models.dependencies import LlmModelServiceDep
 from rag_service.redis.rate_limiter import is_rate_limited
 from rag_service.security.dependencies import AdminApiKeyDep, UserApiKeyDep
 from rag_service.utils import is_dev_env
 
+from .orchestrator import ChatCompletionError, ChatCompletionOrchestrator
 from .schema import (
     ChatCompletionRequest,
     ChatCompletionRequestLog,
     ChatCompletionRequestLogsList,
     ChatCompletionResponse,
+    ChatCompletionStats,
     OpenAIError,
     OpenAIErrorResponse,
 )
-from .services import ChatCompletionService, ChatCompletionTimeoutError
+from .services import ChatCompletionService
 
 router = APIRouter(tags=["Chat Completions"])
 
@@ -54,6 +55,7 @@ async def create_chat_completion(
     auth_context: UserApiKeyDep,
     document_service: DocumentServiceDep,
     llm_model_service: LlmModelServiceDep,
+    knowledge_base_service: KnowledgeBaseServiceDep,
     request_log_service: ChatCompletionRequestLogServiceDep,
 ) -> ChatCompletionResponse | StreamingResponse | JSONResponse:
     if await is_rate_limited(auth_context.user_id, auth_context.requests_per_minute):
@@ -64,119 +66,35 @@ async def create_chat_completion(
             code="rate_limit_exceeded",
         )
 
-    service = ChatCompletionService(
-        document_service=document_service,
-        llm_model_service=llm_model_service,
+    orchestrator = ChatCompletionOrchestrator(
+        completion_service=ChatCompletionService(
+            document_service=document_service,
+            llm_model_service=llm_model_service,
+            knowledge_base_service=knowledge_base_service,
+        ),
+        request_log_service=request_log_service,
     )
-    request_log = await request_log_service.create_pending(
+
+    prepared = await orchestrator.prepare(
         user_id=auth_context.user_id,
         api_key_id=auth_context.api_key_id,
         chat_request=chat_request,
     )
-
-    try:
-        plan = await service.prepare_completion(chat_request)
-        await request_log_service.mark_prepared(request_log=request_log, plan=plan)
-    except BadRequestError as exc:
-        await request_log_service.finish_failed(
-            request_log=request_log,
-            error_code=exc.code,
-            error_message=exc.detail,
-        )
-        return openai_error_response(
-            status_code=400,
-            message=exc.detail,
-            error_type="invalid_request_error",
-            code=exc.code,
-        )
-    except NotFoundError as exc:
-        await request_log_service.finish_failed(
-            request_log=request_log,
-            error_code="model_not_found",
-            error_message=exc.detail,
-        )
-        return openai_error_response(
-            status_code=404,
-            message=exc.detail,
-            error_type="invalid_request_error",
-            code="model_not_found",
-        )
+    if isinstance(prepared, ChatCompletionError):
+        return error_to_response(prepared)
 
     if chat_request.stream:
-
-        async def mark_stream_succeeded(metrics) -> None:
-            await request_log_service.finish_succeeded(
-                request_log=request_log,
-                plan=plan,
-                metrics=metrics,
-            )
-
-        async def mark_stream_timeout(metrics) -> None:
-            await request_log_service.finish_failed(
-                request_log=request_log,
-                plan=plan,
-                metrics=metrics,
-                error_code="provider_timeout",
-                error_message="LLM request timed out",
-            )
-
-        async def completion_stream():
-            try:
-                async for event in service.stream_completion(
-                    plan,
-                    on_complete=mark_stream_succeeded,
-                    on_timeout=mark_stream_timeout,
-                ):
-                    yield event
-            except asyncio.CancelledError:
-                await request_log_service.finish_interrupted(
-                    request_log=request_log,
-                    plan=plan,
-                )
-                raise
-            except Exception as exc:
-                await request_log_service.finish_failed(
-                    request_log=request_log,
-                    plan=plan,
-                    error_code="chat_completion_failed",
-                    error_message=str(exc),
-                )
-                raise
-
         return StreamingResponse(
-            completion_stream(),
+            orchestrator.stream(prepared),
             media_type="text/event-stream",
+            headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache"},
         )
 
-    try:
-        result = await service.complete(plan)
-        await request_log_service.finish_succeeded(
-            request_log=request_log,
-            plan=plan,
-            metrics=result.metrics,
-        )
-        return result.response
-    except ChatCompletionTimeoutError as exc:
-        await request_log_service.finish_failed(
-            request_log=request_log,
-            plan=plan,
-            error_code="provider_timeout",
-            error_message=str(exc),
-        )
-        return openai_error_response(
-            status_code=503,
-            message=str(exc),
-            error_type="server_error",
-            code="provider_timeout",
-        )
-    except Exception as exc:
-        await request_log_service.finish_failed(
-            request_log=request_log,
-            plan=plan,
-            error_code="chat_completion_failed",
-            error_message=str(exc),
-        )
-        raise
+    completed = await orchestrator.complete(prepared)
+    if isinstance(completed, ChatCompletionError):
+        return error_to_response(completed)
+
+    return completed
 
 
 @router.get(
@@ -220,6 +138,48 @@ async def get_chat_completion_requests(
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get(
+    path="/chat-completion-requests/stats",
+    description="Get aggregated chat completion usage statistics",
+    include_in_schema=is_dev_env(),
+    responses={
+        200: {
+            "description": "Returns aggregated usage statistics",
+        },
+        **auth_responses,
+        **internal_server_error_response,
+    },
+)
+async def get_chat_completion_stats(
+    admin_context: AdminApiKeyDep,
+    request_log_service: ChatCompletionRequestLogServiceDep,
+    user_id: UUID | None = None,
+    api_key_id: UUID | None = None,
+    model: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+) -> ChatCompletionStats:
+    return await request_log_service.get_stats(
+        user_id=user_id,
+        api_key_id=api_key_id,
+        model=model,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+
+def error_to_response(error: ChatCompletionError) -> JSONResponse:
+    """
+    Map a `ChatCompletionError` to an OpenAI-compatible error response.
+    """
+    return openai_error_response(
+        status_code=error.status_code,
+        message=error.message,
+        error_type=error.error_type,
+        code=error.code,
     )
 
 

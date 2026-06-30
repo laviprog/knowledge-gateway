@@ -8,6 +8,14 @@ import pytest
 
 from rag_service.llm.base import ProviderTimeoutError
 from rag_service.llm.chat import OpenAIChatClient
+from rag_service.llm.client import ProviderConfig
+
+_TEST_CONFIG = ProviderConfig(
+    base_url="http://example",
+    api_key=None,
+    timeout_seconds=30,
+    max_retries=2,
+)
 
 
 class FakeStream:
@@ -42,7 +50,7 @@ def make_usage_chunk(prompt_tokens: int, completion_tokens: int) -> SimpleNamesp
 
 
 def build_client(chunks: list[SimpleNamespace]) -> tuple[OpenAIChatClient, FakeCompletions]:
-    client = OpenAIChatClient()
+    client = OpenAIChatClient(_TEST_CONFIG)
     completions = FakeCompletions(chunks)
     fake = SimpleNamespace(chat=SimpleNamespace(completions=completions))
     client.client = fake  # ty: ignore[invalid-assignment]
@@ -83,13 +91,30 @@ def test_stream_chat_maps_content_and_final_usage_chunk() -> None:
 
 
 def test_stream_chat_raises_provider_timeout() -> None:
-    client = OpenAIChatClient()
+    client = OpenAIChatClient(_TEST_CONFIG)
 
     class TimeoutCompletions:
         async def create(self, **kwargs):
             raise openai.APITimeoutError(request=httpx.Request("POST", "http://test"))
 
     fake = SimpleNamespace(chat=SimpleNamespace(completions=TimeoutCompletions()))
+    client.client = fake  # ty: ignore[invalid-assignment]
+
+    async def collect():
+        return [chunk async for chunk in client.stream_chat(model="m", messages=[])]
+
+    with pytest.raises(ProviderTimeoutError):
+        asyncio.run(collect())
+
+
+def test_stream_chat_maps_connection_error_to_provider_timeout() -> None:
+    client = OpenAIChatClient(_TEST_CONFIG)
+
+    class ConnectionErrorCompletions:
+        async def create(self, **kwargs):
+            raise openai.APIConnectionError(request=httpx.Request("POST", "http://test"))
+
+    fake = SimpleNamespace(chat=SimpleNamespace(completions=ConnectionErrorCompletions()))
     client.client = fake  # ty: ignore[invalid-assignment]
 
     async def collect():

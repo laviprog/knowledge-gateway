@@ -12,7 +12,8 @@ http:
       {
         "title": "test",
         "content": "This is a document!",
-        "source": "-"
+        "source": "-",
+        "knowledge_base_id": "{{KNOWLEDGE_BASE_ID}}"
       }
   auth: inherit
 
