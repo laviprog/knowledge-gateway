@@ -1,12 +1,14 @@
 from typing import TYPE_CHECKING
+from uuid import UUID
 
-from sqlalchemy import String, Text
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from rag_service.database.base_model import BaseModel
 
 if TYPE_CHECKING:
     from rag_service.chats.models import ChatCompletionRequestLogModel
+    from rag_service.providers.models import ProviderModel
 
 
 class LlmModel(BaseModel):
@@ -21,7 +23,17 @@ class LlmModel(BaseModel):
     provider_model: Mapped[str] = mapped_column(String(255))
     context_window_tokens: Mapped[int]
     max_completion_tokens: Mapped[int]
-    description: Mapped[str | None] = mapped_column(Text)
+    description: Mapped[str | None]
+
+    # Concrete inference endpoint + credentials. Nullable: falls back to the default provider
+    # configured via LLM_BASE_URL/LLM_API_KEY when unset.
+    provider_id: Mapped[UUID | None] = mapped_column(ForeignKey("providers.id"), index=True)
+    inference_provider: Mapped["ProviderModel | None"] = relationship(
+        "ProviderModel",
+        back_populates="llm_models",
+        lazy="selectin",
+    )
+
     chat_completion_requests: Mapped[list["ChatCompletionRequestLogModel"]] = relationship(
         "ChatCompletionRequestLogModel",
         back_populates="llm_model",

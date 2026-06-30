@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     API_KEY_PEPPER: str  # Used for hashing API keys — must be set explicitly, no default
     API_KEY_DEFAULT_PREFIX: str = "syn_rag"  # Default prefix for generated API keys
 
+    # Symmetric key used to encrypt provider API keys at rest (any string; a Fernet key is
+    # derived from it). Required only when a provider record stores an api_key.
+    PROVIDER_SECRET_KEY: str | None = None
+
     # Comma-separated list of trusted reverse-proxy IPs whose X-Forwarded-For header is trusted
     TRUSTED_PROXY_IPS: list[str] = []
 

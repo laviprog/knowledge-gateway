@@ -1,0 +1,9 @@
+info:
+  name: providers
+  type: folder
+  seq: 7
+
+request:
+  auth:
+    type: bearer
+    token: "{{API_KEY}}"

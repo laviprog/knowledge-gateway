@@ -38,6 +38,7 @@ class LlmModelService(SQLAlchemyAsyncRepositoryService[LlmModel, LlmModelReposit
         context_window_tokens: int,
         max_completion_tokens: int,
         provider: str = "openai",
+        provider_id: UUID | None = None,
         description: str | None = None,
     ) -> LlmModel:
         """
@@ -51,6 +52,7 @@ class LlmModelService(SQLAlchemyAsyncRepositoryService[LlmModel, LlmModelReposit
                 provider_model=provider_model,
                 context_window_tokens=context_window_tokens,
                 max_completion_tokens=max_completion_tokens,
+                provider_id=provider_id,
                 description=description,
             ),
             auto_commit=True,
@@ -64,6 +66,7 @@ class LlmModelService(SQLAlchemyAsyncRepositoryService[LlmModel, LlmModelReposit
         provider_model: str | None = None,
         context_window_tokens: int | None = None,
         max_completion_tokens: int | None = None,
+        provider_id: UUID | None = None,
         description: str | None = None,
     ) -> LlmModel:
         """
@@ -86,6 +89,9 @@ class LlmModelService(SQLAlchemyAsyncRepositoryService[LlmModel, LlmModelReposit
 
         if max_completion_tokens is not None:
             model.max_completion_tokens = max_completion_tokens
+
+        if provider_id is not None:
+            model.provider_id = provider_id
 
         if description is not None:
             model.description = description

@@ -18,6 +18,7 @@ from rag_service.config import settings
 from rag_service.documents.services import DocumentSearchWithMetrics, DocumentService
 from rag_service.llm.base import ChatChunk, ChatClient, ProviderTimeoutError
 from rag_service.llm.chat import OpenAIChatClient
+from rag_service.llm.client import ProviderConfig, default_provider_config
 from rag_service.llm_models.models import LlmModel
 from rag_service.llm_models.services import LlmModelService
 from rag_service.log_config import get_log
@@ -100,7 +101,10 @@ class ChatCompletionService:
     ) -> None:
         self.document_service = document_service
         self.llm_model_service = llm_model_service
-        self.chat_client = chat_client or OpenAIChatClient()
+        # When provided (tests/DI), the injected client wins. Otherwise a client is resolved
+        # per request from the model's provider, so different models can target different
+        # OpenAI-compatible endpoints.
+        self.chat_client = chat_client
 
     async def prepare_completion(
         self,
@@ -333,7 +337,10 @@ class ChatCompletionService:
         max_completion_tokens = (
             plan.request.max_completion_tokens or plan.llm_model.max_completion_tokens
         )
-        async for chunk in self.chat_client.stream_chat(
+        chat_client = self.chat_client or OpenAIChatClient(
+            provider_config_for_model(plan.llm_model)
+        )
+        async for chunk in chat_client.stream_chat(
             model=plan.llm_model.provider_model,
             messages=plan.messages,
             temperature=plan.request.temperature,
@@ -713,6 +720,29 @@ class ChatCompletionRequestLogService(
         request_log.llm_ttfb_ms = metrics.llm_ttfb_ms
         request_log.llm_generation_ms = metrics.llm_generation_ms
         request_log.total_ms = metrics.total_ms
+
+
+def provider_config_for_model(llm_model: LlmModel) -> ProviderConfig:
+    """
+    Resolve the provider connection config for a model, falling back to the
+    environment-configured default provider when the model has no provider record.
+    """
+    provider = llm_model.inference_provider
+    if provider is None:
+        return default_provider_config()
+
+    return ProviderConfig(
+        base_url=provider.base_url,
+        api_key=provider.api_key,
+        timeout_seconds=(
+            provider.timeout_seconds
+            if provider.timeout_seconds is not None
+            else settings.LLM_TIMEOUT_SECONDS
+        ),
+        max_retries=(
+            provider.max_retries if provider.max_retries is not None else settings.LLM_MAX_RETRIES
+        ),
+    )
 
 
 def get_query_length(chat_request: ChatCompletionRequest) -> int | None:
