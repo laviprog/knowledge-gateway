@@ -6,6 +6,8 @@ import routerProvider, {
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import { Layout } from "@/components/layout";
 import { Toaster } from "@/components/ui/sonner";
+import { AnalyticsPage } from "@/pages/analytics";
+import { DocumentsList } from "@/pages/documents";
 import { EmbeddingModelsList } from "@/pages/embedding-models";
 import { KnowledgeBasesList } from "@/pages/knowledge-bases";
 import { LlmModelsList } from "@/pages/llm-models";
@@ -46,6 +48,16 @@ export function App() {
 						list: "/llm-models",
 						meta: { label: "LLM models" },
 					},
+					{
+						name: "documents",
+						list: "/documents",
+						meta: { label: "Documents" },
+					},
+					{
+						name: "analytics",
+						list: "/analytics",
+						meta: { label: "Usage" },
+					},
 				]}
 				options={{ syncWithLocation: true, disableTelemetry: true }}
 			>
@@ -66,6 +78,8 @@ export function App() {
 						<Route path="/embedding-models" element={<EmbeddingModelsList />} />
 						<Route path="/knowledge-bases" element={<KnowledgeBasesList />} />
 						<Route path="/llm-models" element={<LlmModelsList />} />
+						<Route path="/documents" element={<DocumentsList />} />
+						<Route path="/analytics" element={<AnalyticsPage />} />
 					</Route>
 
 					<Route

@@ -22,6 +22,7 @@ type ResourceTableProps<T> = {
 	getRowId: (row: T) => string;
 	onEdit?: (row: T) => void;
 	onDelete?: (row: T) => void;
+	extraActions?: (row: T) => ReactNode;
 	emptyLabel?: string;
 };
 
@@ -32,9 +33,10 @@ export function ResourceTable<T>({
 	getRowId,
 	onEdit,
 	onDelete,
+	extraActions,
 	emptyLabel = "No records",
 }: ResourceTableProps<T>) {
-	const hasActions = Boolean(onEdit || onDelete);
+	const hasActions = Boolean(onEdit || onDelete || extraActions);
 	const colSpan = columns.length + (hasActions ? 1 : 0);
 
 	return (
@@ -48,7 +50,7 @@ export function ResourceTable<T>({
 							</TableHead>
 						))}
 						{hasActions ? (
-							<TableHead className="w-32 text-right">Actions</TableHead>
+							<TableHead className="w-40 text-right">Actions</TableHead>
 						) : null}
 					</TableRow>
 				</TableHeader>
@@ -82,6 +84,7 @@ export function ResourceTable<T>({
 								{hasActions ? (
 									<TableCell className="text-right">
 										<div className="flex justify-end gap-1">
+											{extraActions?.(row)}
 											{onEdit ? (
 												<Button
 													variant="ghost"

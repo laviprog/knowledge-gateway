@@ -57,3 +57,63 @@ export type LlmModel = {
 	provider_id: string;
 	description: string | null;
 } & Timestamps;
+
+export type ApiKey = {
+	id: string;
+	name: string | null;
+	key_prefix: string;
+	user_id: string;
+	revoked_at: string | null;
+	expires_at: string | null;
+	last_used_at: string | null;
+} & Timestamps;
+
+export type ApiKeyCreated = {
+	api_key: string;
+	api_key_info: ApiKey;
+};
+
+export type DocumentIndexStatus = "pending" | "indexing" | "indexed" | "failed";
+
+export type DocumentItem = {
+	id: string;
+	knowledge_base_id: string;
+	title: string;
+	content_hash: string;
+	source: string | null;
+	chunks_count: number;
+	index_status: DocumentIndexStatus;
+	index_error: string | null;
+	indexed_at: string | null;
+} & Timestamps;
+
+export type ChatRequestStatus =
+	| "pending"
+	| "succeeded"
+	| "failed"
+	| "interrupted";
+
+export type ChatStatusCount = {
+	status: ChatRequestStatus;
+	count: number;
+};
+
+export type ChatModelStats = {
+	model_public_id: string;
+	requests: number;
+	total_tokens: number | null;
+	avg_total_ms: number | null;
+};
+
+export type ChatCompletionStats = {
+	total_requests: number;
+	by_status: ChatStatusCount[];
+	prompt_tokens_total: number | null;
+	completion_tokens_total: number | null;
+	total_tokens_total: number | null;
+	avg_embedding_ms: number | null;
+	avg_llm_ttfb_ms: number | null;
+	avg_llm_generation_ms: number | null;
+	avg_total_ms: number | null;
+	by_model: ChatModelStats[];
+};

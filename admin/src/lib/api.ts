@@ -24,6 +24,16 @@ async function toHttpError(response: Response): Promise<HttpError> {
 	return { message: detail, statusCode: response.status };
 }
 
+async function parseResponse<T>(response: Response): Promise<T> {
+	if (!response.ok) {
+		throw await toHttpError(response);
+	}
+	if (response.status === 204) {
+		return undefined as T;
+	}
+	return (await response.json()) as T;
+}
+
 /**
  * Thin fetch wrapper: always sends the session cookie, JSON in/out, and normalises errors into
  * Refine's HttpError shape. Returns `undefined` for 204 responses.
@@ -40,14 +50,21 @@ export async function apiFetch<T>(
 			...init?.headers,
 		},
 	});
+	return parseResponse<T>(response);
+}
 
-	if (!response.ok) {
-		throw await toHttpError(response);
-	}
-
-	if (response.status === 204) {
-		return undefined as T;
-	}
-
-	return (await response.json()) as T;
+/**
+ * Multipart upload. The Content-Type header is intentionally left unset so the browser adds the
+ * correct `multipart/form-data` boundary.
+ */
+export async function apiUpload<T>(
+	path: string,
+	formData: FormData,
+): Promise<T> {
+	const response = await fetch(`${API_URL}${path}`, {
+		method: "POST",
+		credentials: "include",
+		body: formData,
+	});
+	return parseResponse<T>(response);
 }

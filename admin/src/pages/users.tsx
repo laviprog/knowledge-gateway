@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { type Column, ResourceTable } from "@/components/resource-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { UserApiKeysDialog } from "@/components/user-api-keys-dialog";
 import type { Role, User } from "@/types";
 
 const PAGE_SIZE = 20;
@@ -50,6 +51,7 @@ export function UsersList() {
 	const [editing, setEditing] = useState<User | null>(null);
 	const [form, setForm] = useState<UserForm>(EMPTY_FORM);
 	const [submitting, setSubmitting] = useState(false);
+	const [keysUser, setKeysUser] = useState<User | null>(null);
 
 	const { result, query } = useList<User>({
 		resource: RESOURCE,
@@ -114,6 +116,11 @@ export function UsersList() {
 				getRowId={(user) => user.id}
 				onEdit={openEdit}
 				onDelete={(user) => remove({ resource: RESOURCE, id: user.id })}
+				extraActions={(user) => (
+					<Button variant="ghost" size="sm" onClick={() => setKeysUser(user)}>
+						Keys
+					</Button>
+				)}
 				emptyLabel="No users"
 			/>
 
@@ -156,6 +163,17 @@ export function UsersList() {
 					hint="0 = unlimited"
 				/>
 			</FormDialog>
+
+			<UserApiKeysDialog
+				userId={keysUser?.id ?? ""}
+				userName={keysUser?.name ?? ""}
+				open={keysUser !== null}
+				onOpenChange={(open) => {
+					if (!open) {
+						setKeysUser(null);
+					}
+				}}
+			/>
 		</div>
 	);
 }
