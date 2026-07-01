@@ -13,6 +13,7 @@ import { KnowledgeBasesList } from "@/pages/knowledge-bases";
 import { LlmModelsList } from "@/pages/llm-models";
 import { LoginPage } from "@/pages/login";
 import { ProvidersList } from "@/pages/providers";
+import { RequestsList } from "@/pages/requests";
 import { UsersList } from "@/pages/users";
 import { authProvider } from "@/providers/authProvider";
 import { dataProvider } from "@/providers/dataProvider";
@@ -54,6 +55,11 @@ export function App() {
 						meta: { label: "Documents" },
 					},
 					{
+						name: "requests",
+						list: "/requests",
+						meta: { label: "Requests" },
+					},
+					{
 						name: "analytics",
 						list: "/analytics",
 						meta: { label: "Usage" },
@@ -79,6 +85,7 @@ export function App() {
 						<Route path="/knowledge-bases" element={<KnowledgeBasesList />} />
 						<Route path="/llm-models" element={<LlmModelsList />} />
 						<Route path="/documents" element={<DocumentsList />} />
+						<Route path="/requests" element={<RequestsList />} />
 						<Route path="/analytics" element={<AnalyticsPage />} />
 					</Route>
 

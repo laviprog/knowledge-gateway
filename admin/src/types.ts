@@ -117,3 +117,28 @@ export type ChatCompletionStats = {
 	avg_total_ms: number | null;
 	by_model: ChatModelStats[];
 };
+
+export type ChatRequestLog = {
+	id: string;
+	request_id: string;
+	user_id: string;
+	api_key_id: string;
+	model_public_id: string;
+	provider: string | null;
+	stream: boolean;
+	status: ChatRequestStatus;
+	error_code: string | null;
+	error_message: string | null;
+	prompt_tokens: number | null;
+	completion_tokens: number | null;
+	total_tokens: number | null;
+	total_ms: number | null;
+	created_at: string;
+};
+
+export type ChatRequestLogsList = {
+	requests: ChatRequestLog[];
+	total: number;
+	limit: number;
+	offset: number;
+};

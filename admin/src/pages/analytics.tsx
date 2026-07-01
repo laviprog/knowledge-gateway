@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { FilterBar, FilterField } from "@/components/filters";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
 	Table,
 	TableBody,
@@ -36,15 +39,64 @@ function StatCard({ label, value }: { label: string; value: string }) {
 }
 
 export function AnalyticsPage() {
+	const [model, setModel] = useState("");
+	const [dateFrom, setDateFrom] = useState("");
+	const [dateTo, setDateTo] = useState("");
+
+	const params = new URLSearchParams();
+	if (model.trim() !== "") {
+		params.set("model", model.trim());
+	}
+	if (dateFrom !== "") {
+		params.set("date_from", new Date(dateFrom).toISOString());
+	}
+	if (dateTo !== "") {
+		params.set("date_to", new Date(dateTo).toISOString());
+	}
+	const query = params.toString();
+
 	const { data, isLoading, isError, error } = useQuery({
-		queryKey: ["chat-completion-stats"],
+		queryKey: ["chat-completion-stats", model, dateFrom, dateTo],
 		queryFn: () =>
-			apiFetch<ChatCompletionStats>("/chat-completion-requests/stats"),
+			apiFetch<ChatCompletionStats>(
+				`/chat-completion-requests/stats${query ? `?${query}` : ""}`,
+			),
 	});
+
+	const reset = () => {
+		setModel("");
+		setDateFrom("");
+		setDateTo("");
+	};
 
 	return (
 		<div className="flex flex-col gap-6">
 			<PageHeader title="Usage" subtitle="Chat completion request statistics" />
+
+			<FilterBar onReset={reset}>
+				<FilterField label="Model">
+					<Input
+						value={model}
+						onChange={(event) => setModel(event.target.value)}
+						placeholder="model public id"
+						className="w-48"
+					/>
+				</FilterField>
+				<FilterField label="From">
+					<Input
+						type="datetime-local"
+						value={dateFrom}
+						onChange={(event) => setDateFrom(event.target.value)}
+					/>
+				</FilterField>
+				<FilterField label="To">
+					<Input
+						type="datetime-local"
+						value={dateTo}
+						onChange={(event) => setDateTo(event.target.value)}
+					/>
+				</FilterField>
+			</FilterBar>
 
 			{isLoading ? (
 				<p className="text-sm text-muted-foreground">Loading…</p>
