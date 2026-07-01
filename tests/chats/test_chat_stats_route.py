@@ -11,7 +11,7 @@ from rag_service.chats.schema import (
     ChatCompletionStatusCount,
 )
 from rag_service.main import app
-from rag_service.security.dependencies import AuthContext, require_admin_key
+from rag_service.security.dependencies import AuthContext, require_admin
 
 _STATS_URL = "/chat-completion-requests/stats"
 
@@ -56,7 +56,7 @@ async def test_stats_endpoint_returns_aggregates_and_forwards_filters() -> None:
         yield fake_service
 
     auth = AuthContext(user_id=uuid4(), api_key_id=uuid4(), requests_per_minute=0)
-    app.dependency_overrides[require_admin_key] = lambda: auth
+    app.dependency_overrides[require_admin] = lambda: auth
     app.dependency_overrides[provide_chat_completion_request_log_service] = _provide_fake_service
     try:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -66,7 +66,7 @@ async def test_stats_endpoint_returns_aggregates_and_forwards_filters() -> None:
                 headers={"Authorization": "Bearer dummy"},
             )
     finally:
-        app.dependency_overrides.pop(require_admin_key, None)
+        app.dependency_overrides.pop(require_admin, None)
         app.dependency_overrides.pop(provide_chat_completion_request_log_service, None)
 
     assert response.status_code == 200

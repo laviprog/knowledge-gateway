@@ -17,7 +17,7 @@ from rag_service.providers.schema import (
     ProvidersList,
     ProviderUpdate,
 )
-from rag_service.security.dependencies import AdminApiKeyDep
+from rag_service.security.dependencies import AdminDep
 from rag_service.utils import is_dev_env
 
 router = APIRouter(prefix="/providers", tags=["Providers"], include_in_schema=is_dev_env())
@@ -35,7 +35,7 @@ router = APIRouter(prefix="/providers", tags=["Providers"], include_in_schema=is
     },
 )
 async def get_providers(
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     provider_service: ProviderServiceDep,
     pagination: PaginationDep,
 ) -> ProvidersList:
@@ -65,7 +65,7 @@ async def get_providers(
 )
 async def get_provider(
     provider_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     provider_service: ProviderServiceDep,
 ) -> Provider:
     provider = await provider_service.get_by_id_or_raise(provider_id)
@@ -88,7 +88,7 @@ async def get_provider(
 )
 async def create_provider(
     provider_create: ProviderCreate,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     provider_service: ProviderServiceDep,
 ) -> Provider:
     provider = await provider_service.create_provider(
@@ -119,7 +119,7 @@ async def create_provider(
 async def update_provider(
     provider_id: UUID,
     provider_update: ProviderUpdate,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     provider_service: ProviderServiceDep,
 ) -> Provider:
     provider = await provider_service.update_provider(
@@ -149,7 +149,7 @@ async def update_provider(
 )
 async def delete_provider(
     provider_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     provider_service: ProviderServiceDep,
 ) -> None:
     await provider_service.delete_provider(provider_id)

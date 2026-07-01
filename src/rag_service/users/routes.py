@@ -11,7 +11,7 @@ from rag_service.exceptions.responses import (
     validation_error_response,
 )
 from rag_service.pagination import PaginationDep
-from rag_service.security.dependencies import AdminApiKeyDep
+from rag_service.security.dependencies import AdminDep
 from rag_service.users.dependencies import UserServiceDep
 from rag_service.users.schema import User, UserCreate, UsersList, UserUpdate
 from rag_service.utils import is_dev_env
@@ -31,7 +31,7 @@ router = APIRouter(prefix="/users", tags=["Users"], include_in_schema=is_dev_env
     },
 )
 async def get_users(
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     user_service: UserServiceDep,
     pagination: PaginationDep,
 ) -> UsersList:
@@ -61,7 +61,7 @@ async def get_users(
 )
 async def get_user(
     user_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     user_service: UserServiceDep,
 ) -> User:
     user_model = await user_service.get_by_id_or_raise(user_id)
@@ -83,7 +83,7 @@ async def get_user(
 )
 async def create_user(
     user_create: UserCreate,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     user_service: UserServiceDep,
 ) -> User:
     user_model = await user_service.create_user(
@@ -110,7 +110,7 @@ async def create_user(
 )
 async def update_user(
     user_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     user_service: UserServiceDep,
     user_update: UserUpdate,
 ) -> User:
@@ -140,7 +140,7 @@ async def update_user(
 )
 async def delete_user(
     user_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     user_service: UserServiceDep,
 ) -> None:
     await user_service.delete_user(user_id=user_id, current_admin_id=admin_id.user_id)
@@ -162,7 +162,7 @@ async def delete_user(
 )
 async def create_api_key(
     user_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     user_service: UserServiceDep,
     api_key_create: ApiKeyCreate,
 ) -> ApiKeyCreated:
@@ -191,7 +191,7 @@ async def create_api_key(
 )
 async def get_api_keys(
     user_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     user_service: UserServiceDep,
     pagination: PaginationDep,
 ) -> ApiKeysList:
