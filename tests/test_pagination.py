@@ -5,7 +5,7 @@ from httpx import ASGITransport, AsyncClient
 
 from rag_service.main import app
 from rag_service.pagination import DEFAULT_PAGE_LIMIT, PaginationParams
-from rag_service.security.dependencies import AuthContext, require_admin_key
+from rag_service.security.dependencies import AuthContext, require_admin
 from rag_service.users.dependencies import provide_user_service
 
 _USERS_URL = "/users"
@@ -31,7 +31,7 @@ async def test_get_users_forwards_pagination_and_returns_metadata() -> None:
     service = _RecordingUserService()
     auth = AuthContext(user_id=uuid4(), api_key_id=uuid4(), requests_per_minute=0)
 
-    app.dependency_overrides[require_admin_key] = lambda: auth
+    app.dependency_overrides[require_admin] = lambda: auth
     app.dependency_overrides[provide_user_service] = lambda: service
     try:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -41,7 +41,7 @@ async def test_get_users_forwards_pagination_and_returns_metadata() -> None:
                 headers={"Authorization": "Bearer dummy"},
             )
     finally:
-        app.dependency_overrides.pop(require_admin_key, None)
+        app.dependency_overrides.pop(require_admin, None)
         app.dependency_overrides.pop(provide_user_service, None)
 
     assert response.status_code == 200
@@ -55,13 +55,13 @@ async def test_get_users_uses_default_pagination_when_omitted() -> None:
     service = _RecordingUserService()
     auth = AuthContext(user_id=uuid4(), api_key_id=uuid4(), requests_per_minute=0)
 
-    app.dependency_overrides[require_admin_key] = lambda: auth
+    app.dependency_overrides[require_admin] = lambda: auth
     app.dependency_overrides[provide_user_service] = lambda: service
     try:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(_USERS_URL, headers={"Authorization": "Bearer dummy"})
     finally:
-        app.dependency_overrides.pop(require_admin_key, None)
+        app.dependency_overrides.pop(require_admin, None)
         app.dependency_overrides.pop(provide_user_service, None)
 
     assert response.status_code == 200
@@ -81,7 +81,7 @@ async def test_get_users_uses_default_pagination_when_omitted() -> None:
 async def test_get_users_rejects_out_of_range_pagination(params: dict[str, int]) -> None:
     auth = AuthContext(user_id=uuid4(), api_key_id=uuid4(), requests_per_minute=0)
 
-    app.dependency_overrides[require_admin_key] = lambda: auth
+    app.dependency_overrides[require_admin] = lambda: auth
     app.dependency_overrides[provide_user_service] = lambda: _RecordingUserService()
     try:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -91,7 +91,7 @@ async def test_get_users_rejects_out_of_range_pagination(params: dict[str, int])
                 headers={"Authorization": "Bearer dummy"},
             )
     finally:
-        app.dependency_overrides.pop(require_admin_key, None)
+        app.dependency_overrides.pop(require_admin, None)
         app.dependency_overrides.pop(provide_user_service, None)
 
     assert response.status_code == 422

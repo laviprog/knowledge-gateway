@@ -31,6 +31,10 @@ class UserModel(BaseModel):
     role: Mapped[Role] = mapped_column(Enum(Role), default=Role.USER)
     requests_per_minute: Mapped[int] = mapped_column(Integer, default=60)
 
+    # Argon2 hash for interactive (admin panel) login. Null for API-only users who never log in
+    # via password.
+    password_hash: Mapped[str | None] = mapped_column(String(255), default=None)
+
     api_keys: Mapped[list["ApiKeyModel"]] = relationship(
         "ApiKeyModel",
         back_populates="user",

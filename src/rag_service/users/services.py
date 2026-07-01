@@ -156,12 +156,34 @@ class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
         """
         Return an active user or raise an exception if it does not exist.
         """
-        user = await self.repository.get_one_or_none(
-            UserModel.deleted_at.is_(None),
-            id=user_id,
-        )
+        user = await self.get_active_or_none(user_id)
 
         if user is None:
             raise NotFoundError()
 
         return user
+
+    async def get_active_or_none(self, user_id: UUID) -> UserModel | None:
+        """
+        Return an active (non-deleted) user or None if it does not exist.
+        """
+        return await self.repository.get_one_or_none(
+            UserModel.deleted_at.is_(None),
+            id=user_id,
+        )
+
+    async def get_active_by_name_or_none(self, name: str) -> UserModel | None:
+        """
+        Return an active (non-deleted) user by name or None if it does not exist.
+        """
+        return await self.repository.get_one_or_none(
+            UserModel.deleted_at.is_(None),
+            name=name,
+        )
+
+    async def set_password(self, user: UserModel, password_hash: str) -> UserModel:
+        """
+        Persist a new password hash on the given user.
+        """
+        user.password_hash = password_hash
+        return await self.repository.update(user, auto_commit=True)
