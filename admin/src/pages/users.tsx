@@ -1,121 +1,161 @@
-import { useDelete, useList } from "@refinedev/core";
+import { useCreate, useDelete, useList, useUpdate } from "@refinedev/core";
 import { useState } from "react";
+import { DataPagination } from "@/components/data-pagination";
+import { FormDialog } from "@/components/form-dialog";
+import { SelectField, TextField } from "@/components/form-fields";
+import { PageHeader } from "@/components/page-header";
+import { type Column, ResourceTable } from "@/components/resource-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import type { User } from "@/types";
+import type { Role, User } from "@/types";
 
 const PAGE_SIZE = 20;
+const RESOURCE = "users";
+
+type UserForm = {
+	name: string;
+	role: Role;
+	requests_per_minute: string;
+};
+
+const EMPTY_FORM: UserForm = {
+	name: "",
+	role: "user",
+	requests_per_minute: "60",
+};
+
+const columns: Column<User>[] = [
+	{
+		header: "Name",
+		cell: (user) => <span className="font-medium">{user.name}</span>,
+	},
+	{
+		header: "Role",
+		cell: (user) => (
+			<Badge variant={user.role === "admin" ? "default" : "secondary"}>
+				{user.role}
+			</Badge>
+		),
+	},
+	{
+		header: "Req/min",
+		cell: (user) =>
+			user.requests_per_minute === 0 ? "unlimited" : user.requests_per_minute,
+	},
+];
 
 export function UsersList() {
 	const [currentPage, setCurrentPage] = useState(1);
+	const [dialogOpen, setDialogOpen] = useState(false);
+	const [editing, setEditing] = useState<User | null>(null);
+	const [form, setForm] = useState<UserForm>(EMPTY_FORM);
+	const [submitting, setSubmitting] = useState(false);
+
 	const { result, query } = useList<User>({
-		resource: "users",
+		resource: RESOURCE,
 		pagination: { currentPage, pageSize: PAGE_SIZE },
 	});
+	const { mutate: create } = useCreate();
+	const { mutate: update } = useUpdate();
 	const { mutate: remove } = useDelete();
 
-	const isLoading = query.isLoading;
-	const users = result?.data ?? [];
 	const total = result?.total ?? 0;
 	const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+	const openCreate = () => {
+		setEditing(null);
+		setForm(EMPTY_FORM);
+		setDialogOpen(true);
+	};
+
+	const openEdit = (user: User) => {
+		setEditing(user);
+		setForm({
+			name: user.name,
+			role: user.role,
+			requests_per_minute: String(user.requests_per_minute),
+		});
+		setDialogOpen(true);
+	};
+
+	const set = <K extends keyof UserForm>(key: K, value: UserForm[K]) =>
+		setForm((prev) => ({ ...prev, [key]: value }));
+
+	const onSubmit = () => {
+		const values = {
+			name: form.name,
+			role: form.role,
+			requests_per_minute: Number(form.requests_per_minute),
+		};
+		setSubmitting(true);
+		const options = {
+			onSuccess: () => setDialogOpen(false),
+			onSettled: () => setSubmitting(false),
+		};
+		if (editing) {
+			update({ resource: RESOURCE, id: editing.id, values }, options);
+		} else {
+			create({ resource: RESOURCE, values }, options);
+		}
+	};
+
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-semibold">Users</h1>
-				<span className="text-sm text-muted-foreground">{total} total</span>
-			</div>
+			<PageHeader
+				title="Users"
+				subtitle={`${total} total`}
+				actions={<Button onClick={openCreate}>New user</Button>}
+			/>
 
-			<div className="rounded-md border">
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>Name</TableHead>
-							<TableHead>Role</TableHead>
-							<TableHead>Req/min</TableHead>
-							<TableHead className="w-24" />
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{isLoading ? (
-							<TableRow>
-								<TableCell
-									colSpan={4}
-									className="text-center text-muted-foreground"
-								>
-									Loading…
-								</TableCell>
-							</TableRow>
-						) : users.length === 0 ? (
-							<TableRow>
-								<TableCell
-									colSpan={4}
-									className="text-center text-muted-foreground"
-								>
-									No users
-								</TableCell>
-							</TableRow>
-						) : (
-							users.map((user) => (
-								<TableRow key={user.id}>
-									<TableCell className="font-medium">{user.name}</TableCell>
-									<TableCell>
-										<Badge
-											variant={user.role === "admin" ? "default" : "secondary"}
-										>
-											{user.role}
-										</Badge>
-									</TableCell>
-									<TableCell>
-										{user.requests_per_minute === 0
-											? "unlimited"
-											: user.requests_per_minute}
-									</TableCell>
-									<TableCell>
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={() => remove({ resource: "users", id: user.id })}
-										>
-											Delete
-										</Button>
-									</TableCell>
-								</TableRow>
-							))
-						)}
-					</TableBody>
-				</Table>
-			</div>
+			<ResourceTable
+				columns={columns}
+				rows={result?.data ?? []}
+				isLoading={query.isLoading}
+				getRowId={(user) => user.id}
+				onEdit={openEdit}
+				onDelete={(user) => remove({ resource: RESOURCE, id: user.id })}
+				emptyLabel="No users"
+			/>
 
-			<div className="flex items-center justify-end gap-2">
-				<Button
-					variant="outline"
-					size="sm"
-					disabled={currentPage <= 1}
-					onClick={() => setCurrentPage((page) => page - 1)}
-				>
-					Previous
-				</Button>
-				<span className="text-sm text-muted-foreground">
-					Page {currentPage} / {pageCount}
-				</span>
-				<Button
-					variant="outline"
-					size="sm"
-					disabled={currentPage >= pageCount}
-					onClick={() => setCurrentPage((page) => page + 1)}
-				>
-					Next
-				</Button>
-			</div>
+			<DataPagination
+				currentPage={currentPage}
+				pageCount={pageCount}
+				onPageChange={setCurrentPage}
+			/>
+
+			<FormDialog
+				open={dialogOpen}
+				onOpenChange={setDialogOpen}
+				title={editing ? "Edit user" : "New user"}
+				onSubmit={onSubmit}
+				isPending={submitting}
+			>
+				<TextField
+					id="name"
+					label="Name"
+					value={form.name}
+					onChange={(value) => set("name", value)}
+					required
+				/>
+				<SelectField
+					id="role"
+					label="Role"
+					value={form.role}
+					onChange={(value) => set("role", value as Role)}
+					options={[
+						{ value: "user", label: "user" },
+						{ value: "admin", label: "admin" },
+					]}
+				/>
+				<TextField
+					id="requests_per_minute"
+					label="Requests per minute"
+					type="number"
+					value={form.requests_per_minute}
+					onChange={(value) => set("requests_per_minute", value)}
+					hint="0 = unlimited"
+				/>
+			</FormDialog>
 		</div>
 	);
 }

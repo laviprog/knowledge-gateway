@@ -6,7 +6,11 @@ import routerProvider, {
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import { Layout } from "@/components/layout";
 import { Toaster } from "@/components/ui/sonner";
+import { EmbeddingModelsList } from "@/pages/embedding-models";
+import { KnowledgeBasesList } from "@/pages/knowledge-bases";
+import { LlmModelsList } from "@/pages/llm-models";
 import { LoginPage } from "@/pages/login";
+import { ProvidersList } from "@/pages/providers";
 import { UsersList } from "@/pages/users";
 import { authProvider } from "@/providers/authProvider";
 import { dataProvider } from "@/providers/dataProvider";
@@ -28,9 +32,19 @@ export function App() {
 						meta: { label: "Providers" },
 					},
 					{
+						name: "embedding-models",
+						list: "/embedding-models",
+						meta: { label: "Embedding models" },
+					},
+					{
 						name: "knowledge-bases",
 						list: "/knowledge-bases",
 						meta: { label: "Knowledge bases" },
+					},
+					{
+						name: "llm-models",
+						list: "/llm-models",
+						meta: { label: "LLM models" },
 					},
 				]}
 				options={{ syncWithLocation: true, disableTelemetry: true }}
@@ -48,6 +62,10 @@ export function App() {
 					>
 						<Route index element={<NavigateToResource resource="users" />} />
 						<Route path="/users" element={<UsersList />} />
+						<Route path="/providers" element={<ProvidersList />} />
+						<Route path="/embedding-models" element={<EmbeddingModelsList />} />
+						<Route path="/knowledge-bases" element={<KnowledgeBasesList />} />
+						<Route path="/llm-models" element={<LlmModelsList />} />
 					</Route>
 
 					<Route
