@@ -142,3 +142,15 @@ export type ChatRequestLogsList = {
 	limit: number;
 	offset: number;
 };
+
+export type DocumentSearchResult = {
+	score: number;
+	document_id: string;
+	chunk_id: string;
+	chunk_index: number;
+	content: string;
+};
+
+export type DocumentSearchResults = {
+	results: DocumentSearchResult[];
+};

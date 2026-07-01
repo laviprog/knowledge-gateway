@@ -1,6 +1,8 @@
 import { useGetIdentity, useLogout, useMenu } from "@refinedev/core";
 import { LogOut } from "lucide-react";
+import { Suspense } from "react";
 import { NavLink, Outlet } from "react-router";
+import { PageFallback } from "@/components/page-fallback";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -67,7 +69,9 @@ export function Layout() {
 					<ThemeToggle />
 				</header>
 				<main className="flex-1 p-8">
-					<Outlet />
+					<Suspense fallback={<PageFallback />}>
+						<Outlet />
+					</Suspense>
 				</main>
 			</div>
 		</div>
