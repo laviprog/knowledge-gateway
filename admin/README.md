@@ -26,8 +26,15 @@ Scripts:
 
 - `npm run dev` — dev server
 - `npm run build` — type-check + production build to `dist/`
+- `npm run test` — run the Vitest suite (`npm run test:watch` for watch mode)
 - `npm run lint` — Biome check
 - `npm run format` — Biome check with `--write`
+
+## Tests
+
+Vitest covers the framework-agnostic logic — the fetch wrapper (`lib/api.ts`), the data provider
+and the auth provider — by stubbing `fetch`. No DOM/browser is needed; the environment is `node`.
+Tests live next to the code as `*.test.ts`.
 
 ## Structure
 
@@ -58,9 +65,3 @@ src/
    the data provider already speaks the backend's `limit`/`offset` + `{ total, <items>: [...] }`
    contract, so no per-resource wiring is needed.
 3. Add shadcn components as needed: `npx shadcn@latest add <component>`.
-
-## Deployment
-
-`npm run build` emits static files to `dist/`. Serve them from the same origin as the API (the
-server-side nginx that already reverse-proxies `/api/v1` to the backend container), so the httpOnly
-session cookie works without CORS.

@@ -5,18 +5,27 @@ repos:
         name: ruff check
         entry: uv run ruff check --fix
         language: system
-        types_or: [python, pyi]
+        types_or: [ python, pyi ]
         exclude: ^migrations/
 
       - id: ruff-format
         name: ruff format
         entry: uv run ruff format
         language: system
-        types_or: [python, pyi]
+        types_or: [ python, pyi ]
         exclude: ^migrations/
 
       - id: ty-check
         name: ty check
         entry: uv run ty check
         language: system
+        pass_filenames: false
+
+      # Admin panel: Biome lint + format. Runs on the whole admin project whenever any
+      # admin file is staged. Requires `npm install` inside admin/.
+      - id: biome-admin
+        name: biome (admin)
+        entry: bash -c 'cd admin && npx biome check --write .'
+        language: system
+        files: ^admin/
         pass_filenames: false
