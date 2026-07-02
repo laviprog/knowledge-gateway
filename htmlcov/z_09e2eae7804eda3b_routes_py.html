@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_09e2eae7804eda3b_schema_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.3">coverage.py v7.14.3</a>,
-            created at 2026-06-30 17:47 +0000
+            created at 2026-07-02 01:49 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -99,7 +99,7 @@
     <p class="run"><span class="n"><a id="t15" href="#t15">15</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">knowledge_bases</span><span class="op">.</span><span class="nam">dependencies</span> <span class="key">import</span> <span class="nam">KnowledgeBaseServiceDep</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t16" href="#t16">16</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">llm_models</span><span class="op">.</span><span class="nam">dependencies</span> <span class="key">import</span> <span class="nam">LlmModelServiceDep</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t17" href="#t17">17</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">redis</span><span class="op">.</span><span class="nam">rate_limiter</span> <span class="key">import</span> <span class="nam">is_rate_limited</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">security</span><span class="op">.</span><span class="nam">dependencies</span> <span class="key">import</span> <span class="nam">AdminApiKeyDep</span><span class="op">,</span> <span class="nam">UserApiKeyDep</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">security</span><span class="op">.</span><span class="nam">dependencies</span> <span class="key">import</span> <span class="nam">AdminDep</span><span class="op">,</span> <span class="nam">UserApiKeyDep</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">utils</span> <span class="key">import</span> <span class="nam">is_dev_env</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">orchestrator</span> <span class="key">import</span> <span class="nam">ChatCompletionError</span><span class="op">,</span> <span class="nam">ChatCompletionOrchestrator</span>&nbsp;</span><span class="r"></span></p>
@@ -194,7 +194,7 @@
     <p class="run run2"><span class="n"><a id="t110" href="#t110">110</a></span><span class="t">    <span class="op">}</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t111" href="#t111">111</a></span><span class="t"><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t112" href="#t112">112</a></span><span class="t"><span class="key">async</span> <span class="key">def</span> <span class="nam">get_chat_completion_requests</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t113" href="#t113">113</a></span><span class="t">    <span class="nam">admin_context</span><span class="op">:</span> <span class="nam">AdminApiKeyDep</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t113" href="#t113">113</a></span><span class="t">    <span class="nam">admin_context</span><span class="op">:</span> <span class="nam">AdminDep</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t114" href="#t114">114</a></span><span class="t">    <span class="nam">request_log_service</span><span class="op">:</span> <span class="nam">ChatCompletionRequestLogServiceDep</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t115" href="#t115">115</a></span><span class="t">    <span class="nam">user_id</span><span class="op">:</span> <span class="nam">UUID</span> <span class="op">|</span> <span class="key">None</span> <span class="op">=</span> <span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">    <span class="nam">api_key_id</span><span class="op">:</span> <span class="nam">UUID</span> <span class="op">|</span> <span class="key">None</span> <span class="op">=</span> <span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -238,7 +238,7 @@
     <p class="run run2"><span class="n"><a id="t154" href="#t154">154</a></span><span class="t">    <span class="op">}</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t155" href="#t155">155</a></span><span class="t"><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t156" href="#t156">156</a></span><span class="t"><span class="key">async</span> <span class="key">def</span> <span class="nam">get_chat_completion_stats</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t157" href="#t157">157</a></span><span class="t">    <span class="nam">admin_context</span><span class="op">:</span> <span class="nam">AdminApiKeyDep</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t157" href="#t157">157</a></span><span class="t">    <span class="nam">admin_context</span><span class="op">:</span> <span class="nam">AdminDep</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t158" href="#t158">158</a></span><span class="t">    <span class="nam">request_log_service</span><span class="op">:</span> <span class="nam">ChatCompletionRequestLogServiceDep</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t159" href="#t159">159</a></span><span class="t">    <span class="nam">user_id</span><span class="op">:</span> <span class="nam">UUID</span> <span class="op">|</span> <span class="key">None</span> <span class="op">=</span> <span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t160" href="#t160">160</a></span><span class="t">    <span class="nam">api_key_id</span><span class="op">:</span> <span class="nam">UUID</span> <span class="op">|</span> <span class="key">None</span> <span class="op">=</span> <span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -293,7 +293,7 @@
             <a class="nav" href="z_09e2eae7804eda3b_schema_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.3">coverage.py v7.14.3</a>,
-            created at 2026-06-30 17:47 +0000
+            created at 2026-07-02 01:49 +0000
         </p>
     </div>
 </footer>

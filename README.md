@@ -12,7 +12,14 @@
 | src/rag\_service/api\_keys/routes.py                    |       12 |        2 |        0 |        0 |     83% |     35-38 |
 | src/rag\_service/api\_keys/schema.py                    |       21 |        1 |        6 |        1 |     93% |        18 |
 | src/rag\_service/api\_keys/services.py                  |       51 |       33 |       16 |        0 |     27% |25, 35-57, 68-74, 80-105, 115-124, 130-142 |
-| src/rag\_service/bootstrap.py                           |       16 |       10 |        4 |        0 |     30% |     10-30 |
+| src/rag\_service/auth/\_\_init\_\_.py                   |        0 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/auth/cookies.py                        |        7 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/auth/dependencies.py                   |       10 |        2 |        0 |        0 |     80% |     12-13 |
+| src/rag\_service/auth/routes.py                         |       25 |        0 |        2 |        1 |     96% |   53-\>55 |
+| src/rag\_service/auth/schema.py                         |        8 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/auth/services.py                       |       12 |        0 |        2 |        0 |    100% |           |
+| src/rag\_service/auth/session\_store.py                 |       38 |        6 |        6 |        1 |     84% |53-55, 63, 68-69 |
+| src/rag\_service/bootstrap.py                           |       25 |       16 |        6 |        0 |     29% |12-34, 47-51 |
 | src/rag\_service/chats/\_\_init\_\_.py                  |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/chats/dependencies.py                  |        9 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/chats/models.py                        |       34 |        0 |        0 |        0 |    100% |           |
@@ -23,7 +30,7 @@
 | src/rag\_service/chats/schema.py                        |       40 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/chats/services.py                      |      242 |       90 |       64 |        9 |     60% |178-181, 215, 269, 281-288, 309, 318-325, 336-\>343, 463-\>465, 465-\>469, 469-\>473, 473-\>exit, 499-509, 520-521, 533-538, 552-562, 573-578, 595-617, 632-673, 710-723, 730-738, 745-750, 765-769, 776, 783 |
 | src/rag\_service/chats/sse.py                           |       10 |        0 |        2 |        0 |    100% |           |
-| src/rag\_service/config.py                              |       29 |        1 |        0 |        0 |     97% |        66 |
+| src/rag\_service/config.py                              |       34 |        1 |        0 |        0 |     97% |        76 |
 | src/rag\_service/database/\_\_init\_\_.py               |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/database/base\_model.py                |        5 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/database/config.py                     |        4 |        0 |        0 |        0 |    100% |           |
@@ -93,21 +100,22 @@
 | src/rag\_service/redis/\_\_init\_\_.py                  |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/redis/client.py                        |       13 |        7 |        4 |        0 |     35% |10-12, 16, 21-23 |
 | src/rag\_service/redis/rate\_limiter.py                 |       20 |        0 |        2 |        0 |    100% |           |
-| src/rag\_service/routes.py                              |       36 |        4 |        0 |        0 |     89% |32, 40, 51-52 |
+| src/rag\_service/routes.py                              |       38 |        4 |        0 |        0 |     89% |33, 41, 52-53 |
 | src/rag\_service/schema.py                              |       10 |        1 |        0 |        0 |     90% |        14 |
 | src/rag\_service/security/\_\_init\_\_.py               |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/security/api\_keys.py                  |       18 |        9 |        0 |        0 |     50% |18-21, 28, 39, 46-48 |
-| src/rag\_service/security/dependencies.py               |       30 |        0 |        6 |        0 |    100% |           |
+| src/rag\_service/security/dependencies.py               |       61 |        2 |       18 |        2 |     95% |    76, 95 |
 | src/rag\_service/security/encryption.py                 |       31 |        6 |        8 |        0 |     74% |67-69, 72-74 |
+| src/rag\_service/security/passwords.py                  |       10 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/users/\_\_init\_\_.py                  |        0 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/users/dependencies.py                  |        9 |        2 |        0 |        0 |     78% |     11-12 |
-| src/rag\_service/users/models.py                        |       15 |        0 |        0 |        0 |    100% |           |
+| src/rag\_service/users/models.py                        |       16 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/users/repositories.py                  |        4 |        0 |        0 |        0 |    100% |           |
 | src/rag\_service/users/routes.py                        |       37 |       11 |        0 |        0 |     70% |67-68, 89-94, 117-124, 146, 169-174, 198-203 |
 | src/rag\_service/users/schema.py                        |       16 |        0 |        0 |        0 |    100% |           |
-| src/rag\_service/users/services.py                      |       58 |       38 |       14 |        0 |     28% |20-21, 27-32, 43, 61-79, 92-106, 112-120, 131-141, 152-153, 159-167 |
+| src/rag\_service/users/services.py                      |       65 |       42 |       14 |        0 |     29% |20-21, 27-32, 43, 61-79, 92-106, 112-120, 131-141, 152-153, 159-164, 170, 179, 188-189 |
 | src/rag\_service/utils.py                               |       11 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                               | **2214** |  **489** |  **322** |   **34** | **74%** |           |
+| **TOTAL**                                               | **2379** |  **509** |  **346** |   **38** | **75%** |           |
 
 
 ## Setup coverage badge

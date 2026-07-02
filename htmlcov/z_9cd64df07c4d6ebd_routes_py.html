@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_9cd64df07c4d6ebd_schema_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.3">coverage.py v7.14.3</a>,
-            created at 2026-06-30 17:47 +0000
+            created at 2026-07-02 01:49 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -93,7 +93,7 @@
     <p class="run run2"><span class="n"><a id="t9" href="#t9">9</a></span><span class="t">    <span class="nam">internal_server_error_response</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t10" href="#t10">10</a></span><span class="t">    <span class="nam">not_found_response</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t11" href="#t11">11</a></span><span class="t"><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">security</span><span class="op">.</span><span class="nam">dependencies</span> <span class="key">import</span> <span class="nam">AdminApiKeyDep</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">security</span><span class="op">.</span><span class="nam">dependencies</span> <span class="key">import</span> <span class="nam">AdminDep</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t"><span class="key">from</span> <span class="nam">rag_service</span><span class="op">.</span><span class="nam">utils</span> <span class="key">import</span> <span class="nam">is_dev_env</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t14" href="#t14">14</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t15" href="#t15">15</a></span><span class="t"><span class="nam">router</span> <span class="op">=</span> <span class="nam">APIRouter</span><span class="op">(</span><span class="nam">prefix</span><span class="op">=</span><span class="str">"/api-keys"</span><span class="op">,</span> <span class="nam">tags</span><span class="op">=</span><span class="op">[</span><span class="str">"API Keys"</span><span class="op">]</span><span class="op">,</span> <span class="nam">include_in_schema</span><span class="op">=</span><span class="nam">is_dev_env</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -113,7 +113,7 @@
     <p class="run run2"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t"><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t"><span class="key">async</span> <span class="key">def</span> <span class="nam">revoke_api_key</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t">    <span class="nam">api_key_id</span><span class="op">:</span> <span class="nam">UUID</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t">    <span class="nam">admin_id</span><span class="op">:</span> <span class="nam">AdminApiKeyDep</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t">    <span class="nam">admin_id</span><span class="op">:</span> <span class="nam">AdminDep</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t">    <span class="nam">api_key_service</span><span class="op">:</span> <span class="nam">ApiKeyServiceDep</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t"><span class="op">)</span> <span class="op">-></span> <span class="nam">ApiKey</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">    <span class="nam">api_key_model</span> <span class="op">=</span> <span class="key">await</span> <span class="nam">api_key_service</span><span class="op">.</span><span class="nam">revoke</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -129,7 +129,7 @@
             <a class="nav" href="z_9cd64df07c4d6ebd_schema_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.3">coverage.py v7.14.3</a>,
-            created at 2026-06-30 17:47 +0000
+            created at 2026-07-02 01:49 +0000
         </p>
     </div>
 </footer>
