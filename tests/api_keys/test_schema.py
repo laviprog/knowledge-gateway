@@ -3,8 +3,8 @@ from datetime import timedelta
 import pytest
 from pydantic import ValidationError
 
-from rag_service.api_keys.schema import ApiKeyCreate
-from rag_service.utils import utc_now
+from knowledge_gateway.api_keys.schema import ApiKeyCreate
+from knowledge_gateway.utils import utc_now
 
 
 def test_api_key_create_accepts_future_timezone_aware_expiration() -> None:

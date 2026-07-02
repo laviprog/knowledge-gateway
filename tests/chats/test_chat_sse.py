@@ -1,6 +1,6 @@
 import json
 
-from rag_service.chats.sse import build_chunk, format_sse_event
+from knowledge_gateway.chats.sse import build_chunk, format_sse_event
 
 
 def test_format_sse_event_formats_json_data() -> None:

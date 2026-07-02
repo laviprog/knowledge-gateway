@@ -3,9 +3,9 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from rag_service.exceptions import ConflictError, NotFoundError
-from rag_service.providers.models import ProviderModel
-from rag_service.providers.services import ProviderService
+from knowledge_gateway.exceptions import ConflictError, NotFoundError
+from knowledge_gateway.providers.models import ProviderModel
+from knowledge_gateway.providers.services import ProviderService
 
 
 class FakeProviderRepository:

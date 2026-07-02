@@ -3,9 +3,9 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from rag_service.exceptions import ConflictError, NotFoundError
-from rag_service.llm_models.models import LlmModel
-from rag_service.llm_models.services import LlmModelService
+from knowledge_gateway.exceptions import ConflictError, NotFoundError
+from knowledge_gateway.llm_models.models import LlmModel
+from knowledge_gateway.llm_models.services import LlmModelService
 
 
 class FakeLlmModelRepository:

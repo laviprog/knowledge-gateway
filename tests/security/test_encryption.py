@@ -1,8 +1,8 @@
 import pytest
 
-import rag_service.security.encryption as encryption
-from rag_service.config import settings
-from rag_service.security.encryption import (
+import knowledge_gateway.security.encryption as encryption
+from knowledge_gateway.config import settings
+from knowledge_gateway.security.encryption import (
     ProviderSecretError,
     decrypt_secret,
     encrypt_secret,

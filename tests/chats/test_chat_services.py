@@ -3,21 +3,21 @@ from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
-from rag_service.chats.schema import ChatCompletionRequest
-from rag_service.chats.services import ChatCompletionService, ChatCompletionTimeoutError
-from rag_service.config import settings
-from rag_service.documents.services import (
+from knowledge_gateway.chats.schema import ChatCompletionRequest
+from knowledge_gateway.chats.services import ChatCompletionService, ChatCompletionTimeoutError
+from knowledge_gateway.config import settings
+from knowledge_gateway.documents.services import (
     DocumentSearchTimings,
     DocumentSearchWithMetrics,
 )
-from rag_service.llm.base import ChatChunk, ChatClient, ProviderTimeoutError
-from rag_service.llm_models.models import LlmModel
-from rag_service.providers.models import ProviderModel
-from rag_service.qdrant.schema import VectorSearchResult
+from knowledge_gateway.llm.base import ChatChunk, ChatClient, ProviderTimeoutError
+from knowledge_gateway.llm_models.models import LlmModel
+from knowledge_gateway.providers.models import ProviderModel
+from knowledge_gateway.qdrant.schema import VectorSearchResult
 
 if TYPE_CHECKING:
-    from rag_service.documents.services import DocumentService
-    from rag_service.llm_models.services import LlmModelService
+    from knowledge_gateway.documents.services import DocumentService
+    from knowledge_gateway.llm_models.services import LlmModelService
 
 
 class FakeDocumentService:

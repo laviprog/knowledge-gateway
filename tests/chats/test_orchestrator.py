@@ -6,17 +6,17 @@ from uuid import uuid4
 
 import pytest
 
-from rag_service.chats.orchestrator import ChatCompletionError, ChatCompletionOrchestrator
-from rag_service.chats.services import (
+from knowledge_gateway.chats.orchestrator import ChatCompletionError, ChatCompletionOrchestrator
+from knowledge_gateway.chats.services import (
     ChatCompletionRequestLogService,
     ChatCompletionService,
     ChatCompletionTimeoutError,
 )
-from rag_service.exceptions import BadRequestError, NotFoundError
-from rag_service.llm.base import ProviderTimeoutError
+from knowledge_gateway.exceptions import BadRequestError, NotFoundError
+from knowledge_gateway.llm.base import ProviderTimeoutError
 
 if TYPE_CHECKING:
-    from rag_service.chats.schema import ChatCompletionRequest
+    from knowledge_gateway.chats.schema import ChatCompletionRequest
 
 _PLAN = SimpleNamespace(completion_id="chatcmpl-test")
 

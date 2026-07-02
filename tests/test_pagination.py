@@ -3,10 +3,10 @@ from uuid import uuid4
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from rag_service.main import app
-from rag_service.pagination import DEFAULT_PAGE_LIMIT, PaginationParams
-from rag_service.security.dependencies import AuthContext, require_admin
-from rag_service.users.dependencies import provide_user_service
+from knowledge_gateway.main import app
+from knowledge_gateway.pagination import DEFAULT_PAGE_LIMIT, PaginationParams
+from knowledge_gateway.security.dependencies import AuthContext, require_admin
+from knowledge_gateway.users.dependencies import provide_user_service
 
 _USERS_URL = "/users"
 

@@ -2,7 +2,7 @@ from uuid import uuid4
 
 import pytest
 
-from rag_service.auth import session_store
+from knowledge_gateway.auth import session_store
 
 
 class FakeRedis:

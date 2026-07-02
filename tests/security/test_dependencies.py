@@ -5,9 +5,9 @@ from uuid import uuid4
 
 import pytest
 
-from rag_service.exceptions import PermissionDeniedError, UnauthorizedError
-from rag_service.security.dependencies import require_admin_key, require_user_key
-from rag_service.users.models import Role
+from knowledge_gateway.exceptions import PermissionDeniedError, UnauthorizedError
+from knowledge_gateway.security.dependencies import require_admin_key, require_user_key
+from knowledge_gateway.users.models import Role
 
 
 class FakeApiKeyService:

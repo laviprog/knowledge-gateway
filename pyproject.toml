@@ -61,7 +61,7 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 
 [tool.coverage.run]
-source = ["rag_service"]
+source = ["knowledge_gateway"]
 branch = true
 relative_files = true
 

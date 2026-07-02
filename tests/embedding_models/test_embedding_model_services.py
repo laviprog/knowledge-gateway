@@ -3,9 +3,9 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from rag_service.embedding_models.models import EmbeddingModel
-from rag_service.embedding_models.services import EmbeddingModelService
-from rag_service.exceptions import BadRequestError, ConflictError, NotFoundError
+from knowledge_gateway.embedding_models.models import EmbeddingModel
+from knowledge_gateway.embedding_models.services import EmbeddingModelService
+from knowledge_gateway.exceptions import BadRequestError, ConflictError, NotFoundError
 
 
 class FakeEmbeddingModelRepository:

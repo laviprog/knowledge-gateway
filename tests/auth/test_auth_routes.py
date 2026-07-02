@@ -4,13 +4,13 @@ from uuid import uuid4
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from rag_service.auth import routes as auth_routes
-from rag_service.auth.dependencies import provide_auth_service
-from rag_service.config import settings
-from rag_service.main import app
-from rag_service.security.dependencies import AdminContext, require_admin_session
-from rag_service.users.dependencies import provide_user_service
-from rag_service.users.models import Role
+from knowledge_gateway.auth import routes as auth_routes
+from knowledge_gateway.auth.dependencies import provide_auth_service
+from knowledge_gateway.config import settings
+from knowledge_gateway.main import app
+from knowledge_gateway.security.dependencies import AdminContext, require_admin_session
+from knowledge_gateway.users.dependencies import provide_user_service
+from knowledge_gateway.users.models import Role
 
 
 def _admin(user_id=None) -> SimpleNamespace:

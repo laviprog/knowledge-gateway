@@ -1,7 +1,7 @@
 import asyncio
 from typing import TYPE_CHECKING, cast
 
-import rag_service.qdrant.client as qdrant_client
+import knowledge_gateway.qdrant.client as qdrant_client
 
 if TYPE_CHECKING:
     from qdrant_client import AsyncQdrantClient
