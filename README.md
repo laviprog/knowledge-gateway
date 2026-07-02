@@ -1,4 +1,6 @@
-# RAG Service
+<div align="center">
+
+# Knowledge Gateway
 
 > A private LLM gateway with retrieval-augmented generation. OpenAI-compatible API, vector search
 > over your documents, and per-user rate limiting — all self-hosted.
@@ -6,29 +8,27 @@
 [![Tests](https://github.com/laviprog/knowledge-gateway/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/laviprog/knowledge-gateway/actions/workflows/tests.yml)
 [![Linting](https://github.com/laviprog/knowledge-gateway/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/laviprog/knowledge-gateway/actions/workflows/lint.yml)
 [![Type Checking](https://github.com/laviprog/knowledge-gateway/actions/workflows/typecheck.yml/badge.svg?branch=main)](https://github.com/laviprog/knowledge-gateway/actions/workflows/typecheck.yml)
+[![Admin](https://github.com/laviprog/knowledge-gateway/actions/workflows/admin.yml/badge.svg?branch=main)](https://github.com/laviprog/knowledge-gateway/actions/workflows/admin.yml)
 [![Coverage](https://raw.githubusercontent.com/laviprog/knowledge-gateway/python-coverage-comment-action-data/badge.svg)](https://htmlpreview.github.io/?https://github.com/laviprog/knowledge-gateway/blob/python-coverage-comment-action-data/htmlcov/index.html)
 
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.130+-009688?logo=fastapi&logoColor=white)
-![ty](https://custom-icon-badges.demolab.com/badge/ty-261230.svg?logo=ty-astral-logo)
-![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)
+![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white)
 ![Qdrant](https://img.shields.io/badge/Qdrant-1.17+-FF4500?logo=qdrant&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7+-DC382D?logo=redis&logoColor=white)
 ![OpenAI SDK](https://img.shields.io/badge/OpenAI_SDK-compatible-412991?logo=openai&logoColor=white)
 
+</div>
+
 ## Table of Contents
 
 - [Features](#features)
-- [Architecture](#architecture)
 - [Getting Started](#getting-started)
-- [Configuration](#configuration)
 - [Development](#development)
 - [Testing](#testing)
 - [API Overview](#api-overview)
-- [Observability](#observability)
-- [Roadmap](#roadmap)
 - [License](#license)
 
 ## Features
@@ -42,6 +42,9 @@
   the raw key is returned only once at creation.
 - **Admin API** — manage users, API keys, documents, and LLM model records through dedicated
   endpoints (hidden from public docs in production).
+- **Admin panel** — a React + Refine + shadcn/ui web UI for the admin API: CRUD for every resource,
+  API key issuing, document upload, knowledge-base search, request logs, and usage analytics. See
+  [`admin/README.md`](admin/README.md).
 - **Chat usage logging** — every request records user, model, status, token counts, latency, and
   errors.
 - **Multi-format document ingestion** — plain text, PDF, and DOCX via MarkItDown; chunks are
@@ -51,45 +54,14 @@
 - **Alembic migrations** — schema changes are versioned and applied automatically on startup.
 - **Docker Compose deployment** — all dependencies (Postgres, Qdrant, Redis) included.
 
-## Architecture
-
-The service has three main responsibilities:
-
-- **API gateway** — authenticates requests via hashed API keys, enforces per-user rate limits, and
-  exposes OpenAI-compatible endpoints alongside admin routes.
-- **Retrieval pipeline** — stores documents in PostgreSQL, indexes chunks in Qdrant, and injects
-  matching context into chat prompts at request time.
-- **Usage accounting** — records chat completion metadata: user, model, token counts, timings, and
-  error codes.
-
-![Architecture Diagram](/assets/architecture.png)
-
-**Storage:**
-
-| Store          | Purpose                                                           |
-|----------------|-------------------------------------------------------------------|
-| **PostgreSQL** | Users, API keys, model records, documents, chunks, and usage logs |
-| **Qdrant**     | Vector points for document chunks (semantic search)               |
-| **Redis**      | Sliding-window rate limit counters (per-user sorted sets)         |
-| **LLM API**    | Embedding and chat model inference (any OpenAI-compatible API)    |
-
 ## Getting Started
-
-### Prerequisites
-
-- Docker and Docker Compose
-- `uv` for local development
-- One or more OpenAI-compatible APIs (OpenAI, Azure OpenAI, vLLM, Ollama's `/v1`, etc.) that serve
-  your embedding and chat models. Endpoints and credentials are configured in the database as
-  **providers** (via the admin API) after first launch — not in `.env`.
 
 ### Quick Start
 
 ```bash
 # 1. Clone and configure
 cp .env.example .env
-# Edit .env — at minimum set: POSTGRES_PASSWORD, QDRANT_API_KEY, API_KEY_PEPPER,
-#             PROVIDER_SECRET_KEY, and BOOTSTRAP_ADMIN_API_KEY
+# Edit .env — at minimum set: POSTGRES_PASSWORD, QDRANT_API_KEY, API_KEY_PEPPER, PROVIDER_SECRET_KEY, and BOOTSTRAP_ADMIN_API_KEY
 
 # 2. Build and start all services
 make build
@@ -102,6 +74,7 @@ make logs
 
 The API will be available at `http://127.0.0.1:8080/api/v1`.  
 Interactive API docs (Scalar) at `http://127.0.0.1:8080/api/v1/docs` (requires `ENV=dev`).
+The admin panel will be available at `http://127.0.0.1:8090/`
 
 Docker Compose runs database migrations automatically before the API starts.
 
@@ -121,58 +94,13 @@ The system ships with no inference configuration — an admin creates it via the
 Clients pick a knowledge base per request by passing `knowledge_base_id` in the chat completion
 body (OpenAI SDK `extra_body`); omitting it runs the completion without retrieval.
 
-### Useful Commands
-
-| Command                | Description                           |
-|------------------------|---------------------------------------|
-| `make up`              | Start all services in the background  |
-| `make down`            | Stop all services                     |
-| `make logs`            | Follow container logs                 |
-| `make ps`              | Show running containers               |
-| `make migrate`         | Run database migrations manually      |
-| `make migration-heads` | Show current migration heads          |
-| `make compose-config`  | Validate Docker Compose configuration |
-
-## Configuration
-
-All settings are loaded from environment variables or `.env`. See `.env.example` for a full
-template with comments.
-
-**Required:**
-
-| Variable              | Description                                                                                                                       |
-|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| `API_KEY_PEPPER`      | Secret used when hashing API keys — generate with `secrets.token_hex(32)` and never change it in production once keys are created |
-| `POSTGRES_*`          | PostgreSQL connection settings (`HOST`, `PORT`, `DB`, `USER`, `PASSWORD`)                                                         |
-| `QDRANT_URL`          | Qdrant service URL                                                                                                                |
-| `QDRANT_API_KEY`      | Qdrant authentication key                                                                                                         |
-
-**Optional / with defaults:**
-
-| Variable                                 | Default                 | Description                                                           |
-|------------------------------------------|-------------------------|-----------------------------------------------------------------------|
-| `ENV`                                    | `prod`                  | Set to `dev` to enable admin routes in API docs                       |
-| `ROOT_PATH`                              | `/api/v1`               | API root path when running behind a reverse proxy                     |
-| `REDIS_URL`                              | `redis://redis:6379`    | Redis URL for rate limiting counters                                  |
-| `RATE_LIMIT_DEFAULT_REQUESTS_PER_MINUTE` | `60`                    | Default rate limit for new users (`0` = unlimited)                    |
-| `TRUSTED_PROXY_IPS`                      | _(empty)_               | Comma-separated IPs whose `X-Forwarded-For` header is trusted         |
-| `PROVIDER_SECRET_KEY`                    | _(empty)_               | Secret used to encrypt provider API keys at rest (required only when a provider record stores an `api_key`) |
-| `BOOTSTRAP_ADMIN_NAME`                   | `default_admin`         | Username for the auto-created admin account                           |
-| `BOOTSTRAP_ADMIN_API_KEY_NAME`           | `admin1`                | API key name for the bootstrap admin key                              |
-| `BOOTSTRAP_ADMIN_API_KEY`                | _(auto-generated)_      | Fixed bootstrap admin key — if unset, a key is generated and logged   |
-| `DOCUMENT_UPLOAD_MAX_BYTES`              | `10485760` (10 MB)      | Maximum size for uploaded documents                                   |
-| `DOCUMENT_CHUNK_MAX_CHARS`               | `2500`                  | Maximum characters per document chunk                                 |
-| `DOCUMENT_CHUNK_OVERLAP_CHARS`           | `250`                   | Overlap between consecutive chunks                                    |
-| `RAG_RETRIEVAL_LIMIT`                    | `10`                    | Number of chunks retrieved per chat request                           |
-| `RAG_CONTEXT_MAX_CHARS`                  | `12000`                 | Max total context characters injected into the prompt                 |
-
 ## Development
 
 ```bash
 # Install all dependency groups (api, migrate, dev)
 make setup
 
-# Install Git hooks (ruff, ty, pytest run on commit)
+# Install Git hooks — ruff + ty on Python, Biome on the admin panel (run on commit)
 make hooks
 
 # Lint, type-check, and format
@@ -183,25 +111,10 @@ make format
 make test
 ```
 
-Project layout:
-
-```
-src/rag_service/
-├── api_keys/       # API key hashing, validation, and management
-├── chats/          # Chat completions route, streaming, and usage logging
-├── documents/      # Document ingestion, chunking, and search
-├── llm_models/     # LLM model records (name, context size, etc.)
-├── redis/          # Redis client and sliding-window rate limiter
-├── security/       # Auth dependencies and AuthContext
-├── users/          # User management and roles
-├── config.py       # Settings (pydantic-settings)
-├── middlewares.py  # Request logging and correlation ID middleware
-└── main.py         # FastAPI app entrypoint
-migrations/         # Alembic migration files
-tests/              # pytest test suite
-```
-
 Admin and dev-only routes are included in the OpenAPI schema only when `ENV=dev`.
+
+The admin panel has its own toolchain (Node, Biome, Vitest); see [
+`admin/README.md`](admin/README.md) for its development and deployment workflow.
 
 ## Testing
 
@@ -215,20 +128,9 @@ make check     # lint + format check + type check
 
 CI runs the suite with coverage on every push and pull request; the
 [`python-coverage-comment-action`](https://github.com/py-cov-action/python-coverage-comment-action)
-posts a coverage summary on pull requests and refreshes the coverage badge above.
-
-Coverage areas:
-
-| Area                   | What is tested                                                                                              |
-|------------------------|-------------------------------------------------------------------------------------------------------------|
-| **Rate limiter**       | Allowed/blocked responses, unlimited bypass, fail-open on Redis error, argument correctness, unique members |
-| **Auth dependencies**  | Admin and user key validation, role enforcement, missing/invalid headers                                    |
-| **Chat routes (HTTP)** | 401 without auth, 401 with invalid key, 429 when rate limited                                               |
-| **Middleware**         | Trusted-proxy IP resolution, `X-Forwarded-For` chain parsing, correlation ID passthrough                    |
-| **Document services**  | Hashing, chunking, overlap, indexing, vector search                                                         |
-| **Chat services**      | RAG prompt building, streaming, timeouts, usage callbacks                                                   |
-| **Schema validation**  | Request/response models, expiration date constraints                                                        |
-| **OpenAPI schema**     | Auth responses, 4xx codes, and protected route documentation                                                |
+posts a coverage summary on pull requests and refreshes the coverage badge above. The admin panel
+has a separate CI job (Biome + `tsc` + Vitest + build) — see the **Admin** badge above and
+[`admin/README.md`](admin/README.md).
 
 ## API Overview
 
@@ -250,47 +152,6 @@ Keys are stored only as hashes — the raw key is returned once at creation time
 The `/chat/completions` endpoint enforces a per-user sliding-window rate limit. The limit is
 configured per user record and defaults to `RATE_LIMIT_DEFAULT_REQUESTS_PER_MINUTE`. Admin accounts
 are always unlimited.
-
-**Admin endpoints** (visible in docs when `ENV=dev`):
-
-| Resource             | Operations                                                           |
-|----------------------|----------------------------------------------------------------------|
-| Users                | Create, list, get, update, delete                                    |
-| API keys             | Create, list per user                                                |
-| LLM models           | Create, list, get, update, delete                                    |
-| Documents            | Upload, list, get, search, delete                                    |
-| Chat completion logs | List with filters + aggregated `/stats` (tokens, latency, per-model) |
-
-Admin list endpoints (users, API keys, LLM models, documents, chat completion logs) are paginated
-via `limit` (1–100, default 50) and `offset` (default 0) query parameters and return `total`,
-`limit`, and `offset` alongside the items.
-
-## Observability
-
-The service exposes a Prometheus metrics endpoint and ships structured JSON logs, with an optional
-Grafana/Loki stack for dashboards and log search.
-
-- **`GET /metrics`** — Prometheus exposition. HTTP RED metrics (rate/errors/duration per route) plus
-  custom collectors: `rag_chat_ttfb_seconds`, `rag_chat_generation_seconds`,
-  `rag_retrieval_seconds`,
-  `rag_chat_tokens_total`, `rag_chat_completions_total`, `rag_llm_provider_errors_total`.
-- **Logs** — structlog JSON to stdout, correlated by `correlation_id` (also returned as the
-  `X-Request-Id` response header).
-
-Start the bundled monitoring stack (opt-in via the `monitoring` compose profile):
-
-```bash
-make monitoring-up      # docker compose --profile monitoring up -d
-```
-
-| Service    | URL                   | Purpose                                                |
-|------------|-----------------------|--------------------------------------------------------|
-| Prometheus | http://127.0.0.1:9090 | Scrapes `api:8080/metrics` every 15s                   |
-| Loki       | http://127.0.0.1:3100 | Log storage (fed by Promtail)                          |
-| Grafana    | http://127.0.0.1:3000 | Dashboards + log search (login from `GRAFANA_ADMIN_*`) |
-
-Grafana is pre-provisioned with Prometheus + Loki datasources and a "RAG Service Overview"
-dashboard. Promtail tails container stdout via the Docker socket and parses the JSON logs.
 
 ## License
 
