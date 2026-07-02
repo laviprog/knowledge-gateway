@@ -1,6 +1,6 @@
 from typing import Any
 
-from rag_service.main import app
+from knowledge_gateway.main import app
 
 
 def get_operation_responses(method: str, path: str) -> dict[str, Any]:

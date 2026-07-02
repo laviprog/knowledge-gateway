@@ -1,9 +1,9 @@
 import pytest
 
-from rag_service.chats.prompts import build_rag_messages, get_latest_user_message
-from rag_service.chats.schema import ChatMessage
-from rag_service.exceptions import BadRequestError
-from rag_service.qdrant.schema import VectorSearchResult
+from knowledge_gateway.chats.prompts import build_rag_messages, get_latest_user_message
+from knowledge_gateway.chats.schema import ChatMessage
+from knowledge_gateway.exceptions import BadRequestError
+from knowledge_gateway.qdrant.schema import VectorSearchResult
 
 
 def test_get_latest_user_message_returns_last_non_empty_user_message() -> None:

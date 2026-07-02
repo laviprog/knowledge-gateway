@@ -1,12 +1,16 @@
 import asyncio
 from uuid import uuid4
 
-from rag_service.documents.models import DocumentChunkModel, DocumentIndexStatus, DocumentModel
-from rag_service.documents.services import DocumentService
-from rag_service.documents.utils import hash_content, split_document_content
-from rag_service.embedding_models.models import EmbeddingModel
-from rag_service.knowledge_bases.models import KnowledgeBaseModel
-from rag_service.qdrant.vector_store import VectorSearchResult
+from knowledge_gateway.documents.models import (
+    DocumentChunkModel,
+    DocumentIndexStatus,
+    DocumentModel,
+)
+from knowledge_gateway.documents.services import DocumentService
+from knowledge_gateway.documents.utils import hash_content, split_document_content
+from knowledge_gateway.embedding_models.models import EmbeddingModel
+from knowledge_gateway.knowledge_bases.models import KnowledgeBaseModel
+from knowledge_gateway.qdrant.vector_store import VectorSearchResult
 
 
 def build_knowledge_base() -> KnowledgeBaseModel:
@@ -175,8 +179,12 @@ def test_split_document_content_adds_overlap() -> None:
 def test_create_chunks_for_document_updates_document_chunks_count(
     monkeypatch,
 ) -> None:
-    monkeypatch.setattr("rag_service.documents.services.settings.DOCUMENT_CHUNK_MAX_CHARS", 30)
-    monkeypatch.setattr("rag_service.documents.services.settings.DOCUMENT_CHUNK_OVERLAP_CHARS", 0)
+    monkeypatch.setattr(
+        "knowledge_gateway.documents.services.settings.DOCUMENT_CHUNK_MAX_CHARS", 30
+    )
+    monkeypatch.setattr(
+        "knowledge_gateway.documents.services.settings.DOCUMENT_CHUNK_OVERLAP_CHARS", 0
+    )
 
     service = object.__new__(DocumentService)
     service.chunk_repository = FakeDocumentChunkRepository()

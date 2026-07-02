@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 from qdrant_client.models import Distance, VectorParams
 
-from rag_service.qdrant.vector_store import QdrantVectorStore
+from knowledge_gateway.qdrant.vector_store import QdrantVectorStore
 
 
 class FakeQdrantClient:

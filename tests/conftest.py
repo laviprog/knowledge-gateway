@@ -4,9 +4,9 @@ import pytest
 
 os.environ.setdefault("POSTGRES_HOST", "localhost")
 os.environ.setdefault("POSTGRES_PORT", "5432")
-os.environ.setdefault("POSTGRES_DB", "rag_service_test")
-os.environ.setdefault("POSTGRES_USER", "rag_service_test")
-os.environ.setdefault("POSTGRES_PASSWORD", "rag_service_test")
+os.environ.setdefault("POSTGRES_DB", "knowledge_gateway_test")
+os.environ.setdefault("POSTGRES_USER", "knowledge_gateway_test")
+os.environ.setdefault("POSTGRES_PASSWORD", "knowledge_gateway_test")
 os.environ.setdefault("QDRANT_URL", "http://localhost:6333")
 os.environ.setdefault("QDRANT_API_KEY", "test")
 os.environ.setdefault("API_KEY_PEPPER", "test-pepper-value-for-tests-only")

@@ -1,8 +1,8 @@
 import asyncio
 from typing import TYPE_CHECKING, cast
 
-import rag_service.llm.client as llm_client
-from rag_service.llm.client import ProviderConfig
+import knowledge_gateway.llm.client as llm_client
+from knowledge_gateway.llm.client import ProviderConfig
 
 if TYPE_CHECKING:
     from openai import AsyncOpenAI

@@ -1,12 +1,12 @@
 from uuid import uuid4
 
-from rag_service.chats.services import provider_config_for_model
-from rag_service.llm_models.models import LlmModel
-from rag_service.providers.config import (
+from knowledge_gateway.chats.services import provider_config_for_model
+from knowledge_gateway.llm_models.models import LlmModel
+from knowledge_gateway.providers.config import (
     DEFAULT_PROVIDER_MAX_RETRIES,
     DEFAULT_PROVIDER_TIMEOUT_SECONDS,
 )
-from rag_service.providers.models import ProviderModel
+from knowledge_gateway.providers.models import ProviderModel
 
 
 def build_model(provider: ProviderModel) -> LlmModel:

@@ -1,4 +1,4 @@
-from rag_service.security.passwords import hash_password, verify_password
+from knowledge_gateway.security.passwords import hash_password, verify_password
 
 
 def test_hash_password_roundtrip() -> None:

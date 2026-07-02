@@ -3,10 +3,10 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from rag_service.embedding_models.models import EmbeddingModel
-from rag_service.exceptions import ConflictError, NotFoundError
-from rag_service.knowledge_bases.models import KnowledgeBaseModel
-from rag_service.knowledge_bases.services import KnowledgeBaseService
+from knowledge_gateway.embedding_models.models import EmbeddingModel
+from knowledge_gateway.exceptions import ConflictError, NotFoundError
+from knowledge_gateway.knowledge_bases.models import KnowledgeBaseModel
+from knowledge_gateway.knowledge_bases.services import KnowledgeBaseService
 
 
 class FakeKnowledgeBaseRepository:

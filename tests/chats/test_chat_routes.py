@@ -3,10 +3,10 @@ from uuid import uuid4
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-import rag_service.chats.routes as chats_routes
-from rag_service.api_keys.dependencies import provide_api_key_service
-from rag_service.main import app
-from rag_service.security.dependencies import AuthContext, require_user_key
+import knowledge_gateway.chats.routes as chats_routes
+from knowledge_gateway.api_keys.dependencies import provide_api_key_service
+from knowledge_gateway.main import app
+from knowledge_gateway.security.dependencies import AuthContext, require_user_key
 
 _CHAT_URL = "/chat/completions"
 _VALID_PAYLOAD = {

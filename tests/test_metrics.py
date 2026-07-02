@@ -2,8 +2,8 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from prometheus_client import generate_latest
 
-from rag_service import metrics
-from rag_service.main import app
+from knowledge_gateway import metrics
+from knowledge_gateway.main import app
 
 
 @pytest.mark.anyio
