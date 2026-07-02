@@ -23,7 +23,7 @@ from rag_service.exceptions.responses import (
 )
 from rag_service.knowledge_bases.dependencies import KnowledgeBaseServiceDep
 from rag_service.pagination import PaginationDep
-from rag_service.security.dependencies import AdminApiKeyDep
+from rag_service.security.dependencies import AdminDep
 from rag_service.utils import is_dev_env
 
 router = APIRouter(prefix="/documents", tags=["Documents"], include_in_schema=is_dev_env())
@@ -41,7 +41,7 @@ router = APIRouter(prefix="/documents", tags=["Documents"], include_in_schema=is
     },
 )
 async def get_documents(
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     document_service: DocumentServiceDep,
     pagination: PaginationDep,
 ) -> DocumentsList:
@@ -71,7 +71,7 @@ async def get_documents(
 )
 async def get_document(
     document_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     document_service: DocumentServiceDep,
 ) -> Document:
     document_model = await document_service.get_by_id_or_raise(document_id)
@@ -95,7 +95,7 @@ async def get_document(
 async def create_document(
     document_create: DocumentCreate,
     background_tasks: BackgroundTasks,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     document_service: DocumentServiceDep,
 ) -> Document:
     document_model = await document_service.create_document(
@@ -123,7 +123,7 @@ async def create_document(
 )
 async def search_documents(
     search_query: DocumentSearchQuery,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     document_service: DocumentServiceDep,
     knowledge_base_service: KnowledgeBaseServiceDep,
 ) -> DocumentSearchResults:
@@ -166,7 +166,7 @@ async def upload_document(
     knowledge_base_id: Annotated[UUID, Form(..., description="Target knowledge base id")],
     file: Annotated[UploadFile, File(..., description="Upload file (.txt, .md, .docx, .pdf)")],
     background_tasks: BackgroundTasks,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     document_service: DocumentServiceDep,
 ) -> Document:
     extracted_document = await extract_document_from_upload(file)
@@ -196,7 +196,7 @@ async def upload_document(
 )
 async def delete_document(
     document_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     document_service: DocumentServiceDep,
 ) -> None:
     await document_service.delete_document(document_id)

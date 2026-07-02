@@ -9,7 +9,7 @@ from rag_service.exceptions.responses import (
     internal_server_error_response,
     not_found_response,
 )
-from rag_service.security.dependencies import AdminApiKeyDep
+from rag_service.security.dependencies import AdminDep
 from rag_service.utils import is_dev_env
 
 router = APIRouter(prefix="/api-keys", tags=["API Keys"], include_in_schema=is_dev_env())
@@ -29,7 +29,7 @@ router = APIRouter(prefix="/api-keys", tags=["API Keys"], include_in_schema=is_d
 )
 async def revoke_api_key(
     api_key_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     api_key_service: ApiKeyServiceDep,
 ) -> ApiKey:
     api_key_model = await api_key_service.revoke(

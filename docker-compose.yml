@@ -10,7 +10,7 @@ services:
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     networks:
-      - rag-service-network
+      - knowledge-gateway-network
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 5s
@@ -25,7 +25,7 @@ services:
     env_file:
       - .env
     networks:
-      - rag-service-network
+      - knowledge-gateway-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -41,7 +41,7 @@ services:
       - ./data/qdrant:/qdrant/storage
       - ./docker/qdrant/production.yaml:/qdrant/config/production.yaml:ro
     networks:
-      - rag-service-network
+      - knowledge-gateway-network
     healthcheck:
       test:
         [
@@ -59,7 +59,7 @@ services:
     ports:
       - "127.0.0.1:6379:6379"
     networks:
-      - rag-service-network
+      - knowledge-gateway-network
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
@@ -76,7 +76,7 @@ services:
     env_file:
       - .env
     networks:
-      - rag-service-network
+      - knowledge-gateway-network
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -86,8 +86,17 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # ---- Observability stack (opt-in: `docker compose --profile monitoring up -d`) ----
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8090:80"
+    networks:
+      - knowledge-gateway-network
+    restart: unless-stopped
 
+  # ---- Observability stack (opt-in: `docker compose --profile monitoring up -d`) ----
   prometheus:
     image: prom/prometheus:v3.5.4
     profiles: [ "monitoring" ]
@@ -100,7 +109,7 @@ services:
     ports:
       - "127.0.0.1:9090:9090"
     networks:
-      - rag-service-network
+      - knowledge-gateway-network
     restart: unless-stopped
 
   loki:
@@ -113,7 +122,7 @@ services:
     ports:
       - "127.0.0.1:3100:3100"
     networks:
-      - rag-service-network
+      - knowledge-gateway-network
     restart: unless-stopped
 
   promtail:
@@ -124,7 +133,7 @@ services:
       - ./docker/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - rag-service-network
+      - knowledge-gateway-network
     depends_on:
       - loki
     restart: unless-stopped
@@ -142,13 +151,13 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     networks:
-      - rag-service-network
+      - knowledge-gateway-network
     depends_on:
       - prometheus
       - loki
     restart: unless-stopped
 
 networks:
-  rag-service-network:
-    name: rag-service-network
+  knowledge-gateway-network:
+    name: knowledge-gateway-network
     driver: bridge

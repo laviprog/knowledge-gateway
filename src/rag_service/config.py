@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     ROOT_PATH: str = "/api/v1"  # API root path
 
     API_KEY_PEPPER: str  # Used for hashing API keys — must be set explicitly, no default
-    API_KEY_DEFAULT_PREFIX: str = "syn_rag"  # Default prefix for generated API keys
+    API_KEY_DEFAULT_PREFIX: str = "kg"  # Default prefix for generated API keys
 
     # Symmetric key used to encrypt provider API keys at rest (any string; a Fernet key is
     # derived from it). Required only when a provider record stores an api_key.
@@ -32,6 +32,16 @@ class Settings(BaseSettings):
     BOOTSTRAP_ADMIN_NAME: str = "default_admin"
     BOOTSTRAP_ADMIN_API_KEY_NAME: str = "admin1"
     BOOTSTRAP_ADMIN_API_KEY: str | None = None
+    # Password for the bootstrap admin's interactive (admin panel) login. When set, it is applied
+    # to the default admin on startup (created or updated). Leave unset to disable password login.
+    BOOTSTRAP_ADMIN_PASSWORD: str | None = None
+
+    # Interactive session auth (admin panel). Sessions are opaque tokens stored in Redis and
+    # carried in an httpOnly cookie — the raw token never reaches JavaScript.
+    SESSION_COOKIE_NAME: str = "knowledge_gateway_admin_session"
+    SESSION_TTL_SECONDS: int = 60 * 60 * 8  # 8 hours; TTL slides on each authenticated request
+    SESSION_COOKIE_SECURE: bool = True  # set False for local dev over plain HTTP
+    SESSION_COOKIE_SAMESITE: str = "strict"  # strict | lax | none
 
     DOCUMENT_UPLOAD_MAX_BYTES: int = 10 * 1024 * 1024  # Maximum allowed size 10 MB
     DOCUMENT_CHUNK_MAX_CHARS: int = 2500

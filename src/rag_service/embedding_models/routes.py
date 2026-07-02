@@ -17,7 +17,7 @@ from rag_service.exceptions.responses import (
     validation_error_response,
 )
 from rag_service.pagination import PaginationDep
-from rag_service.security.dependencies import AdminApiKeyDep
+from rag_service.security.dependencies import AdminDep
 from rag_service.utils import is_dev_env
 
 router = APIRouter(
@@ -37,7 +37,7 @@ router = APIRouter(
     },
 )
 async def get_embedding_models(
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     embedding_model_service: EmbeddingModelServiceDep,
     pagination: PaginationDep,
 ) -> EmbeddingModelsList:
@@ -67,7 +67,7 @@ async def get_embedding_models(
 )
 async def get_embedding_model(
     model_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     embedding_model_service: EmbeddingModelServiceDep,
 ) -> EmbeddingModel:
     model = await embedding_model_service.get_by_id_or_raise(model_id)
@@ -90,7 +90,7 @@ async def get_embedding_model(
 )
 async def create_embedding_model(
     model_create: EmbeddingModelCreate,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     embedding_model_service: EmbeddingModelServiceDep,
 ) -> EmbeddingModel:
     model = await embedding_model_service.create_embedding_model(
@@ -121,7 +121,7 @@ async def create_embedding_model(
 async def update_embedding_model(
     model_id: UUID,
     model_update: EmbeddingModelUpdate,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     embedding_model_service: EmbeddingModelServiceDep,
 ) -> EmbeddingModel:
     model = await embedding_model_service.update_embedding_model(
@@ -150,7 +150,7 @@ async def update_embedding_model(
 )
 async def delete_embedding_model(
     model_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     embedding_model_service: EmbeddingModelServiceDep,
 ) -> None:
     await embedding_model_service.delete_embedding_model(model_id)

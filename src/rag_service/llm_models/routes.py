@@ -19,7 +19,7 @@ from rag_service.llm_models.schema import (
     OpenAIModelsList,
 )
 from rag_service.pagination import PaginationDep
-from rag_service.security.dependencies import AdminApiKeyDep, UserApiKeyDep
+from rag_service.security.dependencies import AdminDep, UserApiKeyDep
 from rag_service.utils import is_dev_env
 
 llm_models_router = APIRouter(
@@ -40,7 +40,7 @@ models_router = APIRouter(prefix="/models", tags=["Models"])
     },
 )
 async def get_llm_models(
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     llm_model_service: LlmModelServiceDep,
     pagination: PaginationDep,
 ) -> LlmModelsList:
@@ -70,7 +70,7 @@ async def get_llm_models(
 )
 async def get_llm_model(
     model_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     llm_model_service: LlmModelServiceDep,
 ) -> LlmModel:
     model = await llm_model_service.get_by_id_or_raise(model_id)
@@ -93,7 +93,7 @@ async def get_llm_model(
 )
 async def create_llm_model(
     model_create: LlmModelCreate,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     llm_model_service: LlmModelServiceDep,
 ) -> LlmModel:
     model = await llm_model_service.create_model(
@@ -125,7 +125,7 @@ async def create_llm_model(
 async def update_llm_model(
     model_id: UUID,
     model_update: LlmModelUpdate,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     llm_model_service: LlmModelServiceDep,
 ) -> LlmModel:
     model = await llm_model_service.update_model(
@@ -156,7 +156,7 @@ async def update_llm_model(
 )
 async def delete_llm_model(
     model_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     llm_model_service: LlmModelServiceDep,
 ) -> None:
     await llm_model_service.delete_model(model_id)

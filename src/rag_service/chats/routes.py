@@ -15,7 +15,7 @@ from rag_service.exceptions.responses import (
 from rag_service.knowledge_bases.dependencies import KnowledgeBaseServiceDep
 from rag_service.llm_models.dependencies import LlmModelServiceDep
 from rag_service.redis.rate_limiter import is_rate_limited
-from rag_service.security.dependencies import AdminApiKeyDep, UserApiKeyDep
+from rag_service.security.dependencies import AdminDep, UserApiKeyDep
 from rag_service.utils import is_dev_env
 
 from .orchestrator import ChatCompletionError, ChatCompletionOrchestrator
@@ -110,7 +110,7 @@ async def create_chat_completion(
     },
 )
 async def get_chat_completion_requests(
-    admin_context: AdminApiKeyDep,
+    admin_context: AdminDep,
     request_log_service: ChatCompletionRequestLogServiceDep,
     user_id: UUID | None = None,
     api_key_id: UUID | None = None,
@@ -154,7 +154,7 @@ async def get_chat_completion_requests(
     },
 )
 async def get_chat_completion_stats(
-    admin_context: AdminApiKeyDep,
+    admin_context: AdminDep,
     request_log_service: ChatCompletionRequestLogServiceDep,
     user_id: UUID | None = None,
     api_key_id: UUID | None = None,

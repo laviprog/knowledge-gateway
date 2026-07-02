@@ -18,7 +18,7 @@ from rag_service.knowledge_bases.schema import (
     KnowledgeBaseUpdate,
 )
 from rag_service.pagination import PaginationDep
-from rag_service.security.dependencies import AdminApiKeyDep
+from rag_service.security.dependencies import AdminDep
 from rag_service.utils import is_dev_env
 
 router = APIRouter(
@@ -38,7 +38,7 @@ router = APIRouter(
     },
 )
 async def get_knowledge_bases(
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     knowledge_base_service: KnowledgeBaseServiceDep,
     pagination: PaginationDep,
 ) -> KnowledgeBasesList:
@@ -68,7 +68,7 @@ async def get_knowledge_bases(
 )
 async def get_knowledge_base(
     knowledge_base_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     knowledge_base_service: KnowledgeBaseServiceDep,
 ) -> KnowledgeBase:
     knowledge_base = await knowledge_base_service.get_by_id_or_raise(knowledge_base_id)
@@ -92,7 +92,7 @@ async def get_knowledge_base(
 )
 async def create_knowledge_base(
     knowledge_base_create: KnowledgeBaseCreate,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     knowledge_base_service: KnowledgeBaseServiceDep,
 ) -> KnowledgeBase:
     knowledge_base = await knowledge_base_service.create_knowledge_base(
@@ -121,7 +121,7 @@ async def create_knowledge_base(
 async def update_knowledge_base(
     knowledge_base_id: UUID,
     knowledge_base_update: KnowledgeBaseUpdate,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     knowledge_base_service: KnowledgeBaseServiceDep,
 ) -> KnowledgeBase:
     knowledge_base = await knowledge_base_service.update_knowledge_base(
@@ -148,7 +148,7 @@ async def update_knowledge_base(
 )
 async def delete_knowledge_base(
     knowledge_base_id: UUID,
-    admin_id: AdminApiKeyDep,
+    admin_id: AdminDep,
     knowledge_base_service: KnowledgeBaseServiceDep,
     document_service: DocumentServiceDep,
 ) -> None:

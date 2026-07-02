@@ -22,3 +22,4 @@ htmlcov/
 
 .DS_Store
 data/
+local/

@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse
 from scalar_fastapi import get_scalar_api_reference
 
 from rag_service.api_keys.routes import router as api_keys_router
+from rag_service.auth.routes import router as auth_router
 from rag_service.chats.routes import router as chats_router
 from rag_service.config import settings
 from rag_service.documents.routes import router as documents_router
@@ -57,6 +58,7 @@ def routes_register(app: FastAPI) -> None:
     Registers all API routes with the FastAPI application.
     """
     app.include_router(router=router)
+    app.include_router(router=auth_router)
     app.include_router(router=users_router)
     app.include_router(router=api_keys_router)
     app.include_router(router=documents_router)
