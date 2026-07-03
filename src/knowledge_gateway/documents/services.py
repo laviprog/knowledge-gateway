@@ -68,12 +68,22 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
         config = resolve_provider_config(embedding_model.inference_provider)
         return OpenAIEmbeddingClient(config, embedding_model.provider_model)
 
-    async def list_active(self, limit: int, offset: int) -> tuple[list[DocumentModel], int]:
+    async def list_active(
+        self,
+        limit: int,
+        offset: int,
+        knowledge_base_id: UUID | None = None,
+    ) -> tuple[list[DocumentModel], int]:
         """
         Return a page of documents that have not been soft-deleted, with the total count.
+        Optionally scoped to a single knowledge base.
         """
+        filters: list[Any] = [DocumentModel.deleted_at.is_(None)]
+        if knowledge_base_id is not None:
+            filters.append(DocumentModel.knowledge_base_id == knowledge_base_id)
+
         documents, total = await self.repository.list_and_count(
-            DocumentModel.deleted_at.is_(None),
+            *filters,
             LimitOffset(limit=limit, offset=offset),
             OrderBy(field_name="created_at", sort_order="desc"),
         )

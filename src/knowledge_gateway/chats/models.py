@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Boolean, Enum, Float, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from knowledge_gateway.database.base_model import BaseModel
@@ -9,6 +10,7 @@ from knowledge_gateway.enums import BaseEnum
 
 if TYPE_CHECKING:
     from knowledge_gateway.api_keys.models import ApiKeyModel
+    from knowledge_gateway.knowledge_bases.models import KnowledgeBaseModel
     from knowledge_gateway.llm_models.models import LlmModel
     from knowledge_gateway.users.models import UserModel
 
@@ -55,6 +57,20 @@ class ChatCompletionRequestLogModel(BaseModel):
     model_public_id: Mapped[str] = mapped_column(String(255), index=True)
     provider: Mapped[str | None] = mapped_column(String(50))
     provider_model: Mapped[str | None] = mapped_column(String(255))
+
+    # Retrieval context: which knowledge base (if any) served this request and whether RAG ran.
+    knowledge_base_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("knowledge_bases.id"), index=True
+    )
+    knowledge_base: Mapped["KnowledgeBaseModel | None"] = relationship(
+        "KnowledgeBaseModel",
+        lazy="selectin",
+    )
+    knowledge_base_public_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    used_retrieval: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    # Distinct document ids whose chunks were retrieved for this request (for search-quality
+    # analysis). No message or chunk content is persisted.
+    retrieved_document_ids: Mapped[list[str] | None] = mapped_column(JSONB)
 
     request_id: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     completion_id: Mapped[str | None] = mapped_column(String(255), index=True)

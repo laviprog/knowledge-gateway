@@ -31,7 +31,7 @@ router = APIRouter(prefix="/documents", tags=["Documents"], include_in_schema=is
 
 @router.get(
     path="",
-    description="Get documents in the global knowledge base",
+    description="Get documents, optionally filtered by knowledge base",
     responses={
         200: {
             "description": "Returns documents",
@@ -44,10 +44,12 @@ async def get_documents(
     admin_id: AdminDep,
     document_service: DocumentServiceDep,
     pagination: PaginationDep,
+    knowledge_base_id: UUID | None = None,
 ) -> DocumentsList:
     document_models, total = await document_service.list_active(
         limit=pagination.limit,
         offset=pagination.offset,
+        knowledge_base_id=knowledge_base_id,
     )
     return DocumentsList(
         documents=[Document.model_validate(document_model) for document_model in document_models],
@@ -111,7 +113,7 @@ async def create_document(
 
 @router.post(
     path="/search",
-    description="Search document chunks in the global knowledge base",
+    description="Search document chunks within a knowledge base",
     responses={
         200: {
             "description": "Returns matching document chunks",
@@ -184,7 +186,7 @@ async def upload_document(
 @router.delete(
     path="/{document_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    description="Delete a document from the global knowledge base",
+    description="Delete a document from its knowledge base",
     responses={
         204: {
             "description": "Document has been deleted",

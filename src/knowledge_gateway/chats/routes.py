@@ -115,6 +115,7 @@ async def get_chat_completion_requests(
     user_id: UUID | None = None,
     api_key_id: UUID | None = None,
     model: str | None = None,
+    knowledge_base_id: UUID | None = None,
     status: ChatCompletionRequestStatus | None = None,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
@@ -125,6 +126,7 @@ async def get_chat_completion_requests(
         user_id=user_id,
         api_key_id=api_key_id,
         model=model,
+        knowledge_base_id=knowledge_base_id,
         status=status,
         date_from=date_from,
         date_to=date_to,
@@ -159,6 +161,7 @@ async def get_chat_completion_stats(
     user_id: UUID | None = None,
     api_key_id: UUID | None = None,
     model: str | None = None,
+    knowledge_base_id: UUID | None = None,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
 ) -> ChatCompletionStats:
@@ -166,6 +169,7 @@ async def get_chat_completion_stats(
         user_id=user_id,
         api_key_id=api_key_id,
         model=model,
+        knowledge_base_id=knowledge_base_id,
         date_from=date_from,
         date_to=date_to,
     )

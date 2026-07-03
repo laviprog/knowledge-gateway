@@ -1,13 +1,27 @@
+from collections.abc import Sequence
+from dataclasses import dataclass, field
 from uuid import UUID
 
 from advanced_alchemy.filters import LimitOffset, OrderBy
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
+from sqlalchemy import func, select
 
+from knowledge_gateway.documents.models import DocumentIndexStatus, DocumentModel
 from knowledge_gateway.embedding_models.models import EmbeddingModel
 from knowledge_gateway.embedding_models.repositories import EmbeddingModelRepository
 from knowledge_gateway.exceptions import ConflictError, NotFoundError
 from knowledge_gateway.knowledge_bases.models import KnowledgeBaseModel
 from knowledge_gateway.knowledge_bases.repositories import KnowledgeBaseRepository
+
+
+@dataclass
+class KnowledgeBaseDocumentStats:
+    """
+    Per-knowledge-base document counts and indexing-status breakdown.
+    """
+
+    document_count: int = 0
+    status_counts: dict[DocumentIndexStatus, int] = field(default_factory=dict)
 
 
 class KnowledgeBaseService(
@@ -31,6 +45,39 @@ class KnowledgeBaseService(
             OrderBy(field_name="created_at", sort_order="desc"),
         )
         return list(knowledge_bases), total
+
+    async def get_document_stats(
+        self, knowledge_base_ids: Sequence[UUID]
+    ) -> dict[UUID, KnowledgeBaseDocumentStats]:
+        """
+        Return per-knowledge-base active-document counts and indexing-status breakdown.
+
+        Every requested id is present in the result, with zeroed stats when it has no documents.
+        """
+        stats = {kb_id: KnowledgeBaseDocumentStats() for kb_id in knowledge_base_ids}
+        if not stats:
+            return stats
+
+        statement = (
+            select(
+                DocumentModel.knowledge_base_id,
+                DocumentModel.index_status,
+                func.count(),
+            )
+            .where(
+                DocumentModel.knowledge_base_id.in_(list(knowledge_base_ids)),
+                DocumentModel.deleted_at.is_(None),
+            )
+            .group_by(DocumentModel.knowledge_base_id, DocumentModel.index_status)
+        )
+        rows = (await self.repository.session.execute(statement)).all()
+
+        for knowledge_base_id, index_status, count in rows:
+            entry = stats[knowledge_base_id]
+            entry.document_count += count
+            entry.status_counts[index_status] = count
+
+        return stats
 
     async def create_knowledge_base(
         self,

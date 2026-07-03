@@ -7,6 +7,8 @@ from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 from knowledge_gateway.embedding_models.models import EmbeddingModel
 from knowledge_gateway.embedding_models.repositories import EmbeddingModelRepository
 from knowledge_gateway.exceptions import BadRequestError, ConflictError, NotFoundError
+from knowledge_gateway.knowledge_bases.models import KnowledgeBaseModel
+from knowledge_gateway.knowledge_bases.repositories import KnowledgeBaseRepository
 
 # Qdrant rejects characters such as ":" and "/" in collection names.
 _VALID_COLLECTION_NAME = re.compile(r"^[a-zA-Z0-9_-]+$")
@@ -26,6 +28,10 @@ class EmbeddingModelService(
     """Embedding Model Service"""
 
     repository_type = EmbeddingModelRepository
+
+    def __init__(self, session, **kwargs):
+        super().__init__(session=session, **kwargs)
+        self.knowledge_base_repository = KnowledgeBaseRepository(session=session)
 
     async def list_paginated(self, limit: int, offset: int) -> tuple[list[EmbeddingModel], int]:
         """
@@ -112,10 +118,29 @@ class EmbeddingModelService(
     async def delete_embedding_model(self, model_id: UUID) -> None:
         """
         Soft-delete an embedding model.
+
+        Refused when any active knowledge base still references it: deleting it would strand
+        those knowledge bases against a vector space (Qdrant collection) that no longer has an
+        owning model. Delete the referencing knowledge bases first.
         """
         model = await self.get_by_id_or_raise(model_id)
+        await self.ensure_not_referenced_by_knowledge_bases(model_id)
         model.soft_delete()
         await self.repository.update(model, auto_commit=True)
+
+    async def ensure_not_referenced_by_knowledge_bases(self, model_id: UUID) -> None:
+        """
+        Ensure no active knowledge base references this embedding model.
+        """
+        referencing = await self.knowledge_base_repository.get_one_or_none(
+            KnowledgeBaseModel.deleted_at.is_(None),
+            embedding_model_id=model_id,
+        )
+        if referencing is not None:
+            raise ConflictError(
+                "Embedding model is referenced by one or more knowledge bases; "
+                "delete those knowledge bases first"
+            )
 
     async def get_by_id_or_raise(self, model_id: UUID) -> EmbeddingModel:
         """

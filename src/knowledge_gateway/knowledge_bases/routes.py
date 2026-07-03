@@ -46,8 +46,11 @@ async def get_knowledge_bases(
         limit=pagination.limit,
         offset=pagination.offset,
     )
+    stats = await knowledge_base_service.get_document_stats([kb.id for kb in knowledge_base_list])
     return KnowledgeBasesList(
-        knowledge_bases=[KnowledgeBase.model_validate(kb) for kb in knowledge_base_list],
+        knowledge_bases=[
+            KnowledgeBase.from_model(kb, stats.get(kb.id)) for kb in knowledge_base_list
+        ],
         total=total,
         limit=pagination.limit,
         offset=pagination.offset,
@@ -72,7 +75,8 @@ async def get_knowledge_base(
     knowledge_base_service: KnowledgeBaseServiceDep,
 ) -> KnowledgeBase:
     knowledge_base = await knowledge_base_service.get_by_id_or_raise(knowledge_base_id)
-    return KnowledgeBase.model_validate(knowledge_base)
+    stats = await knowledge_base_service.get_document_stats([knowledge_base.id])
+    return KnowledgeBase.from_model(knowledge_base, stats.get(knowledge_base.id))
 
 
 @router.post(
@@ -101,7 +105,7 @@ async def create_knowledge_base(
         embedding_model_id=knowledge_base_create.embedding_model_id,
         description=knowledge_base_create.description,
     )
-    return KnowledgeBase.model_validate(knowledge_base)
+    return KnowledgeBase.from_model(knowledge_base)
 
 
 @router.patch(
@@ -130,7 +134,7 @@ async def update_knowledge_base(
         name=knowledge_base_update.name,
         description=knowledge_base_update.description,
     )
-    return KnowledgeBase.model_validate(knowledge_base)
+    return KnowledgeBase.from_model(knowledge_base)
 
 
 @router.delete(
