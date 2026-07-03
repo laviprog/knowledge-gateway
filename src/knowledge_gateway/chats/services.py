@@ -26,7 +26,7 @@ from knowledge_gateway.log_config import get_log
 from knowledge_gateway.providers.config import resolve_provider_config
 from knowledge_gateway.utils import generate_uuid
 
-from .prompts import build_rag_messages, get_latest_user_message
+from .prompts import build_rag_messages, get_latest_user_message, resolve_rag_instruction
 from .schema import (
     ChatCompletionChoice,
     ChatCompletionKnowledgeBaseStats,
@@ -109,12 +109,7 @@ class ChatCompletionService:
     ) -> None:
         self.document_service = document_service
         self.llm_model_service = llm_model_service
-        # Resolves the default knowledge base for models without one. Optional so the service
-        # can be exercised without retrieval wiring (tests/DI).
         self.knowledge_base_service = knowledge_base_service
-        # When provided (tests/DI), the injected client wins. Otherwise a client is resolved
-        # per request from the model's provider, so different models can target different
-        # OpenAI-compatible endpoints.
         self.chat_client = chat_client
 
     async def prepare_completion(
@@ -143,7 +138,11 @@ class ChatCompletionService:
             limit=settings.RAG_RETRIEVAL_LIMIT,
             knowledge_base=knowledge_base,
         )
-        messages = build_rag_messages(chat_request.messages, retrieval.results)
+        messages = build_rag_messages(
+            chat_request.messages,
+            retrieval.results,
+            resolve_rag_instruction(knowledge_base),
+        )
 
         log.info(
             "RAG retrieval completed",

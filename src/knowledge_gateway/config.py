@@ -48,6 +48,17 @@ class Settings(BaseSettings):
     DOCUMENT_CHUNK_OVERLAP_CHARS: int = 250
     RAG_RETRIEVAL_LIMIT: int = 10
     RAG_CONTEXT_MAX_CHARS: int = 12000
+    # Minimum similarity score a retrieved chunk must reach to be used as context. ``None``
+    # disables score filtering. A knowledge base may override this with its own ``min_score``.
+    RAG_MIN_SCORE: float | None = None
+    # Default system instruction prepended to the RAG prompt. A knowledge base may override this
+    # with its own ``system_prompt``.
+    RAG_SYSTEM_INSTRUCTION: str = (
+        "Use the knowledge base context below to answer the user.\n"
+        "If the context does not contain enough information, say that the information is "
+        "insufficient.\n"
+        "Keep the answer concise and accurate."
+    )
 
     # Database configuration
     POSTGRES_HOST: str

@@ -13,7 +13,7 @@ from knowledge_gateway.knowledge_bases.models import KnowledgeBaseModel
 from knowledge_gateway.qdrant.vector_store import VectorSearchResult
 
 
-def build_knowledge_base() -> KnowledgeBaseModel:
+def build_knowledge_base(min_score: float | None = None) -> KnowledgeBaseModel:
     embedding_model = EmbeddingModel(
         id=uuid4(),
         public_id="emb-default",
@@ -27,6 +27,7 @@ def build_knowledge_base() -> KnowledgeBaseModel:
         public_id="default",
         name="Default",
         embedding_model_id=embedding_model.id,
+        min_score=min_score,
     )
     knowledge_base.embedding_model = embedding_model
     return knowledge_base
@@ -93,6 +94,7 @@ class FakeVectorStore:
         self.knowledge_base_id: str | None = None
         self.deleted_collection: str | None = None
         self.deleted_point_ids: list[str] | None = None
+        self.score_threshold: float | None = None
 
     async def delete_points(self, collection_name: str, point_ids: list[str]) -> None:
         self.deleted_collection = collection_name
@@ -117,11 +119,13 @@ class FakeVectorStore:
         knowledge_base_id: str,
         query_embedding: list[float],
         limit: int,
+        score_threshold: float | None = None,
     ) -> list[VectorSearchResult]:
         self.collection_name = collection_name
         self.knowledge_base_id = knowledge_base_id
         self.query_embedding = query_embedding
         self.limit = limit
+        self.score_threshold = score_threshold
         return [
             VectorSearchResult(
                 score=0.9,
@@ -301,6 +305,49 @@ def test_search_documents_without_knowledge_base_returns_empty() -> None:
 
     assert results == []
     assert service.vector_store.query_embedding is None
+
+
+def test_search_documents_uses_knowledge_base_min_score(monkeypatch) -> None:
+    monkeypatch.setattr("knowledge_gateway.documents.services.settings.RAG_MIN_SCORE", 0.1)
+    knowledge_base = build_knowledge_base(min_score=0.75)
+    service = object.__new__(DocumentService)
+    service.vector_store = FakeVectorStore()
+    service._embedding_client_for = lambda embedding_model: FakeEmbeddingClient()
+
+    asyncio.run(
+        service.search_documents(query="return policy", limit=3, knowledge_base=knowledge_base)
+    )
+
+    # The knowledge base override wins over the global setting.
+    assert service.vector_store.score_threshold == 0.75
+
+
+def test_search_documents_falls_back_to_global_min_score(monkeypatch) -> None:
+    monkeypatch.setattr("knowledge_gateway.documents.services.settings.RAG_MIN_SCORE", 0.42)
+    knowledge_base = build_knowledge_base(min_score=None)
+    service = object.__new__(DocumentService)
+    service.vector_store = FakeVectorStore()
+    service._embedding_client_for = lambda embedding_model: FakeEmbeddingClient()
+
+    asyncio.run(
+        service.search_documents(query="return policy", limit=3, knowledge_base=knowledge_base)
+    )
+
+    assert service.vector_store.score_threshold == 0.42
+
+
+def test_search_documents_without_threshold_passes_none(monkeypatch) -> None:
+    monkeypatch.setattr("knowledge_gateway.documents.services.settings.RAG_MIN_SCORE", None)
+    knowledge_base = build_knowledge_base(min_score=None)
+    service = object.__new__(DocumentService)
+    service.vector_store = FakeVectorStore()
+    service._embedding_client_for = lambda embedding_model: FakeEmbeddingClient()
+
+    asyncio.run(
+        service.search_documents(query="return policy", limit=3, knowledge_base=knowledge_base)
+    )
+
+    assert service.vector_store.score_threshold is None
 
 
 class FakeSession:
