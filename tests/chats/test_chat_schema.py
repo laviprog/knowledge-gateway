@@ -1,4 +1,4 @@
-from rag_service.chats.schema import ChatCompletionRequest
+from knowledge_gateway.chats.schema import ChatCompletionRequest
 
 
 def test_chat_completion_request_ignores_unknown_fields() -> None:

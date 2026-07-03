@@ -4,8 +4,8 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from httpx import ASGITransport, AsyncClient
 
-import rag_service.middlewares as middlewares_module
-from rag_service.middlewares import LogMiddleware
+import knowledge_gateway.middlewares as middlewares_module
+from knowledge_gateway.middlewares import LogMiddleware
 
 
 def _make_test_app() -> FastAPI:

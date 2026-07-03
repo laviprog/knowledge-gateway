@@ -3,10 +3,10 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from rag_service.embedding_models.models import EmbeddingModel
-from rag_service.exceptions import ConflictError, NotFoundError
-from rag_service.knowledge_bases.models import KnowledgeBaseModel
-from rag_service.knowledge_bases.services import KnowledgeBaseService
+from knowledge_gateway.embedding_models.models import EmbeddingModel
+from knowledge_gateway.exceptions import ConflictError, NotFoundError
+from knowledge_gateway.knowledge_bases.models import KnowledgeBaseModel
+from knowledge_gateway.knowledge_bases.services import KnowledgeBaseService
 
 
 class FakeKnowledgeBaseRepository:
@@ -124,6 +124,69 @@ def test_create_knowledge_base_rejects_duplicate_public_id() -> None:
                 embedding_model_id=embedding_model.id,
             )
         )
+
+
+def test_create_knowledge_base_persists_retrieval_overrides() -> None:
+    embedding_model = build_embedding_model()
+    service = build_service(embedding_model=embedding_model)
+
+    knowledge_base = asyncio.run(
+        service.create_knowledge_base(
+            public_id="support",
+            name="Support",
+            embedding_model_id=embedding_model.id,
+            min_score=0.6,
+            system_prompt="You are the billing expert.",
+        )
+    )
+
+    assert knowledge_base.min_score == 0.6
+    assert knowledge_base.system_prompt == "You are the billing expert."
+
+
+def test_update_knowledge_base_updates_retrieval_overrides() -> None:
+    embedding_model = build_embedding_model()
+    existing = KnowledgeBaseModel(
+        id=uuid4(),
+        public_id="support",
+        name="Support",
+        embedding_model_id=embedding_model.id,
+        min_score=0.2,
+        system_prompt="Old prompt.",
+    )
+    service = build_service(knowledge_base=existing, embedding_model=embedding_model)
+
+    updated = asyncio.run(
+        service.update_knowledge_base(
+            knowledge_base_id=existing.id,
+            min_score=0.8,
+            system_prompt="New prompt.",
+        )
+    )
+
+    assert updated.min_score == 0.8
+    assert updated.system_prompt == "New prompt."
+
+
+def test_update_knowledge_base_leaves_overrides_untouched_when_omitted() -> None:
+    embedding_model = build_embedding_model()
+    existing = KnowledgeBaseModel(
+        id=uuid4(),
+        public_id="support",
+        name="Support",
+        embedding_model_id=embedding_model.id,
+        min_score=0.2,
+        system_prompt="Keep me.",
+    )
+    service = build_service(knowledge_base=existing, embedding_model=embedding_model)
+
+    updated = asyncio.run(
+        service.update_knowledge_base(knowledge_base_id=existing.id, name="Renamed")
+    )
+
+    assert updated.name == "Renamed"
+    assert updated.min_score == 0.2
+    assert updated.system_prompt == "Keep me."
 
 
 def test_get_by_public_id_or_none_returns_none_when_missing() -> None:

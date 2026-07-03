@@ -1,0 +1,204 @@
+from typing import Annotated
+from uuid import UUID
+
+from fastapi import APIRouter, BackgroundTasks, File, Form, UploadFile, status
+
+from knowledge_gateway.documents.dependencies import DocumentServiceDep
+from knowledge_gateway.documents.extractors import extract_document_from_upload
+from knowledge_gateway.documents.schema import (
+    Document,
+    DocumentCreate,
+    DocumentSearchQuery,
+    DocumentSearchResult,
+    DocumentSearchResults,
+    DocumentsList,
+)
+from knowledge_gateway.documents.tasks import index_document
+from knowledge_gateway.exceptions.responses import (
+    auth_responses,
+    bad_request_response,
+    internal_server_error_response,
+    not_found_response,
+    validation_error_response,
+)
+from knowledge_gateway.knowledge_bases.dependencies import KnowledgeBaseServiceDep
+from knowledge_gateway.pagination import PaginationDep
+from knowledge_gateway.security.dependencies import AdminDep
+from knowledge_gateway.utils import is_dev_env
+
+router = APIRouter(prefix="/documents", tags=["Documents"], include_in_schema=is_dev_env())
+
+
+@router.get(
+    path="",
+    description="Get documents, optionally filtered by knowledge base",
+    responses={
+        200: {
+            "description": "Returns documents",
+        },
+        **auth_responses,
+        **internal_server_error_response,
+    },
+)
+async def get_documents(
+    admin_id: AdminDep,
+    document_service: DocumentServiceDep,
+    pagination: PaginationDep,
+    knowledge_base_id: UUID | None = None,
+) -> DocumentsList:
+    document_models, total = await document_service.list_active(
+        limit=pagination.limit,
+        offset=pagination.offset,
+        knowledge_base_id=knowledge_base_id,
+    )
+    return DocumentsList(
+        documents=[Document.model_validate(document_model) for document_model in document_models],
+        total=total,
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
+
+
+@router.get(
+    path="/{document_id}",
+    description="Get a document by id",
+    responses={
+        200: {
+            "description": "Returns a document",
+        },
+        **auth_responses,
+        **not_found_response,
+        **internal_server_error_response,
+    },
+)
+async def get_document(
+    document_id: UUID,
+    admin_id: AdminDep,
+    document_service: DocumentServiceDep,
+) -> Document:
+    document_model = await document_service.get_by_id_or_raise(document_id)
+    return Document.model_validate(document_model)
+
+
+@router.post(
+    path="",
+    status_code=status.HTTP_201_CREATED,
+    description="Create a document in a knowledge base",
+    responses={
+        201: {
+            "description": "Document has been created",
+        },
+        **auth_responses,
+        **not_found_response,
+        **validation_error_response,
+        **internal_server_error_response,
+    },
+)
+async def create_document(
+    document_create: DocumentCreate,
+    background_tasks: BackgroundTasks,
+    admin_id: AdminDep,
+    document_service: DocumentServiceDep,
+) -> Document:
+    document_model = await document_service.create_document(
+        knowledge_base_id=document_create.knowledge_base_id,
+        title=document_create.title,
+        content=document_create.content,
+        source=document_create.source,
+        source_metadata=document_create.source_metadata,
+    )
+    background_tasks.add_task(index_document, document_model.id)
+    return Document.model_validate(document_model)
+
+
+@router.post(
+    path="/search",
+    description="Search document chunks within a knowledge base",
+    responses={
+        200: {
+            "description": "Returns matching document chunks",
+        },
+        **auth_responses,
+        **validation_error_response,
+        **internal_server_error_response,
+    },
+)
+async def search_documents(
+    search_query: DocumentSearchQuery,
+    admin_id: AdminDep,
+    document_service: DocumentServiceDep,
+    knowledge_base_service: KnowledgeBaseServiceDep,
+) -> DocumentSearchResults:
+    knowledge_base = await knowledge_base_service.get_by_id_or_raise(search_query.knowledge_base_id)
+    search_results = await document_service.search_documents(
+        query=search_query.query,
+        limit=search_query.limit,
+        knowledge_base=knowledge_base,
+    )
+    return DocumentSearchResults(
+        results=[
+            DocumentSearchResult(
+                score=result.score,
+                document_id=UUID(result.document_id),
+                chunk_id=UUID(result.chunk_id),
+                chunk_index=result.chunk_index,
+                content=result.content,
+            )
+            for result in search_results
+        ],
+    )
+
+
+@router.post(
+    path="/upload",
+    status_code=status.HTTP_201_CREATED,
+    description="Upload a file into a knowledge base",
+    responses={
+        201: {
+            "description": "Document has been uploaded",
+        },
+        **auth_responses,
+        **bad_request_response,
+        **not_found_response,
+        **validation_error_response,
+        **internal_server_error_response,
+    },
+)
+async def upload_document(
+    knowledge_base_id: Annotated[UUID, Form(..., description="Target knowledge base id")],
+    file: Annotated[UploadFile, File(..., description="Upload file (.txt, .md, .docx, .pdf)")],
+    background_tasks: BackgroundTasks,
+    admin_id: AdminDep,
+    document_service: DocumentServiceDep,
+) -> Document:
+    extracted_document = await extract_document_from_upload(file)
+    document_model = await document_service.create_document(
+        knowledge_base_id=knowledge_base_id,
+        title=extracted_document.title,
+        content=extracted_document.content,
+        source=extracted_document.source,
+        source_metadata=extracted_document.source_metadata,
+    )
+    background_tasks.add_task(index_document, document_model.id)
+    return Document.model_validate(document_model)
+
+
+@router.delete(
+    path="/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    description="Delete a document from its knowledge base",
+    responses={
+        204: {
+            "description": "Document has been deleted",
+        },
+        **auth_responses,
+        **not_found_response,
+        **internal_server_error_response,
+    },
+)
+async def delete_document(
+    document_id: UUID,
+    admin_id: AdminDep,
+    document_service: DocumentServiceDep,
+) -> None:
+    await document_service.delete_document(document_id)

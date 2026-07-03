@@ -3,7 +3,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from rag_service.documents.schema import DocumentCreate
+from knowledge_gateway.documents.schema import DocumentCreate
 
 
 def test_document_create_accepts_minimal_payload() -> None:

@@ -3,20 +3,21 @@ from uuid import uuid4
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from rag_service.chats.dependencies import provide_chat_completion_request_log_service
-from rag_service.chats.models import ChatCompletionRequestStatus
-from rag_service.chats.schema import (
+from knowledge_gateway.chats.dependencies import provide_chat_completion_request_log_service
+from knowledge_gateway.chats.models import ChatCompletionRequestStatus
+from knowledge_gateway.chats.schema import (
     ChatCompletionModelStats,
     ChatCompletionStats,
     ChatCompletionStatusCount,
 )
-from rag_service.main import app
-from rag_service.security.dependencies import AuthContext, require_admin
+from knowledge_gateway.main import app
+from knowledge_gateway.security.dependencies import AuthContext, require_admin
 
 _STATS_URL = "/chat-completion-requests/stats"
 
 _CANNED_STATS = ChatCompletionStats(
     total_requests=3,
+    retrieval_requests=2,
     by_status=[
         ChatCompletionStatusCount(status=ChatCompletionRequestStatus.SUCCEEDED, count=2),
         ChatCompletionStatusCount(status=ChatCompletionRequestStatus.FAILED, count=1),
@@ -36,6 +37,7 @@ _CANNED_STATS = ChatCompletionStats(
             avg_total_ms=35.0,
         )
     ],
+    by_knowledge_base=[],
 )
 
 

@@ -6,9 +6,9 @@ import httpx
 import openai
 import pytest
 
-from rag_service.llm.base import ProviderTimeoutError
-from rag_service.llm.chat import OpenAIChatClient
-from rag_service.llm.client import ProviderConfig
+from knowledge_gateway.llm.base import ProviderTimeoutError
+from knowledge_gateway.llm.chat import OpenAIChatClient
+from knowledge_gateway.llm.client import ProviderConfig
 
 _TEST_CONFIG = ProviderConfig(
     base_url="http://example",

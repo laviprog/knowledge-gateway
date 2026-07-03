@@ -1,8 +1,8 @@
 import asyncio
 from types import SimpleNamespace
 
-from rag_service.llm.client import ProviderConfig
-from rag_service.llm.embeddings import OpenAIEmbeddingClient
+from knowledge_gateway.llm.client import ProviderConfig
+from knowledge_gateway.llm.embeddings import OpenAIEmbeddingClient
 
 _TEST_CONFIG = ProviderConfig(
     base_url="http://example",

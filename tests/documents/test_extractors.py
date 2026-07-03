@@ -5,9 +5,9 @@ import pytest
 from fastapi import UploadFile
 from starlette.datastructures import Headers
 
-from rag_service.config import settings
-from rag_service.documents.extractors import extract_document_from_upload
-from rag_service.exceptions import BadRequestError
+from knowledge_gateway.config import settings
+from knowledge_gateway.documents.extractors import extract_document_from_upload
+from knowledge_gateway.exceptions import BadRequestError
 
 
 def make_upload_file(

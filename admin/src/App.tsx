@@ -16,6 +16,9 @@ import { notificationProvider } from "@/providers/notificationProvider";
 const LoginPage = lazy(() =>
 	import("@/pages/login").then((m) => ({ default: m.LoginPage })),
 );
+const DashboardPage = lazy(() =>
+	import("@/pages/dashboard").then((m) => ({ default: m.DashboardPage })),
+);
 const UsersList = lazy(() =>
 	import("@/pages/users").then((m) => ({ default: m.UsersList })),
 );
@@ -57,6 +60,11 @@ export function App() {
 				routerProvider={routerProvider}
 				notificationProvider={notificationProvider}
 				resources={[
+					{
+						name: "dashboard",
+						list: "/dashboard",
+						meta: { label: "Dashboard" },
+					},
 					{ name: "users", list: "/users", meta: { label: "Users" } },
 					{
 						name: "providers",
@@ -101,7 +109,11 @@ export function App() {
 								</Authenticated>
 							}
 						>
-							<Route index element={<NavigateToResource resource="users" />} />
+							<Route
+								index
+								element={<NavigateToResource resource="dashboard" />}
+							/>
+							<Route path="/dashboard" element={<DashboardPage />} />
 							<Route path="/users" element={<UsersList />} />
 							<Route path="/providers" element={<ProvidersList />} />
 							<Route
@@ -119,7 +131,7 @@ export function App() {
 						<Route
 							element={
 								<Authenticated key="unauthenticated" fallback={<Outlet />}>
-									<NavigateToResource resource="users" />
+									<NavigateToResource resource="dashboard" />
 								</Authenticated>
 							}
 						>

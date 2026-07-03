@@ -1,0 +1,189 @@
+from datetime import datetime
+from uuid import UUID
+
+from advanced_alchemy.filters import LimitOffset, OrderBy
+from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
+
+from knowledge_gateway.api_keys.models import ApiKeyModel
+from knowledge_gateway.api_keys.services import ApiKeyService
+from knowledge_gateway.exceptions import ConflictError, NotFoundError
+from knowledge_gateway.users.models import Role, UserModel
+from knowledge_gateway.users.repositories import UserRepository
+
+
+class UserService(SQLAlchemyAsyncRepositoryService[UserModel, UserRepository]):
+    """User Service"""
+
+    repository_type = UserRepository
+
+    def __init__(self, session, **kwargs):
+        super().__init__(session=session, **kwargs)
+        self.api_key_service = ApiKeyService(session=session)
+
+    async def list_active(self, limit: int, offset: int) -> tuple[list[UserModel], int]:
+        """
+        Return a page of users that have not been soft-deleted, with the total count.
+        """
+        users, total = await self.repository.list_and_count(
+            UserModel.deleted_at.is_(None),
+            LimitOffset(limit=limit, offset=offset),
+            OrderBy(field_name="created_at", sort_order="desc"),
+        )
+        return list(users), total
+
+    async def create_user(
+        self,
+        name: str,
+        role: Role = Role.USER,
+        requests_per_minute: int = 60,
+    ) -> UserModel:
+        """
+        Create a user.
+        """
+        return await self.repository.add(
+            UserModel(
+                name=name,
+                role=role,
+                requests_per_minute=requests_per_minute,
+            ),
+            auto_commit=True,
+        )
+
+    async def create_admin_with_api_key(
+        self,
+        name: str,
+        api_key_name: str = "admin1",
+        api_key_value: str | None = None,
+    ) -> tuple[UserModel, str]:
+        """
+        Create an admin with an API key. Admins are unlimited (requests_per_minute=0).
+        """
+        admin = await self.repository.add(
+            UserModel(
+                name=name,
+                role=Role.ADMIN,
+                requests_per_minute=0,
+            )
+        )
+        await self.repository.session.flush()
+
+        _, api_key_value = await self.api_key_service.create_api_key(
+            admin.id,
+            name=api_key_name,
+            api_key_value=api_key_value,
+            auto_commit=False,
+        )
+
+        await self.repository.session.commit()
+
+        return admin, api_key_value
+
+    async def update_user(
+        self,
+        user_id: UUID,
+        current_admin_id: UUID,
+        name: str | None = None,
+        role: Role | None = None,
+        requests_per_minute: int | None = None,
+    ) -> UserModel:
+        """
+        Update an active user.
+        """
+        user = await self.get_by_id_or_raise(user_id)
+
+        if role is not None and user.id == current_admin_id and role != user.role:
+            raise ConflictError("Admins cannot change their own role")
+
+        if name is not None:
+            user.name = name
+
+        if role is not None:
+            user.role = role
+
+        if requests_per_minute is not None:
+            user.requests_per_minute = requests_per_minute
+
+        return await self.repository.update(user, auto_commit=True)
+
+    async def delete_user(self, user_id: UUID, current_admin_id: UUID) -> None:
+        """
+        Soft-delete an active user and soft-delete their active API keys.
+        """
+        if user_id == current_admin_id:
+            raise ConflictError("Admins cannot delete themselves")
+
+        user = await self.get_by_id_or_raise(user_id)
+        user.soft_delete()
+
+        await self.repository.update(user, auto_commit=False)
+        await self.api_key_service.delete_api_keys_for_user(user_id, auto_commit=False)
+        await self.repository.session.commit()
+
+    async def create_api_key_for_user(
+        self,
+        user_id: UUID,
+        name: str | None = None,
+        expires_at: datetime | None = None,
+    ) -> tuple[ApiKeyModel, str]:
+        """
+        Create an API key for an existing active user.
+        """
+        user_model = await self.repository.get_one_or_none(id=user_id)
+        if user_model is None or user_model.is_deleted:
+            raise NotFoundError()
+
+        api_key_model, api_key_value = await self.api_key_service.create_api_key(
+            user_id,
+            name=name,
+            expires_at=expires_at,
+        )
+
+        return api_key_model, api_key_value
+
+    async def list_api_keys_for_user(
+        self,
+        user_id: UUID,
+        limit: int,
+        offset: int,
+    ) -> tuple[list[ApiKeyModel], int]:
+        """
+        Return a page of API keys for an existing active user, with the total count.
+        """
+        user = await self.get_by_id_or_raise(user_id)
+        return await self.api_key_service.list_for_user(user.id, limit=limit, offset=offset)
+
+    async def get_by_id_or_raise(self, user_id: UUID) -> UserModel:
+        """
+        Return an active user or raise an exception if it does not exist.
+        """
+        user = await self.get_active_or_none(user_id)
+
+        if user is None:
+            raise NotFoundError()
+
+        return user
+
+    async def get_active_or_none(self, user_id: UUID) -> UserModel | None:
+        """
+        Return an active (non-deleted) user or None if it does not exist.
+        """
+        return await self.repository.get_one_or_none(
+            UserModel.deleted_at.is_(None),
+            id=user_id,
+        )
+
+    async def get_active_by_name_or_none(self, name: str) -> UserModel | None:
+        """
+        Return an active (non-deleted) user by name or None if it does not exist.
+        """
+        return await self.repository.get_one_or_none(
+            UserModel.deleted_at.is_(None),
+            name=name,
+        )
+
+    async def set_password(self, user: UserModel, password_hash: str) -> UserModel:
+        """
+        Persist a new password hash on the given user.
+        """
+        user.password_hash = password_hash
+        return await self.repository.update(user, auto_commit=True)

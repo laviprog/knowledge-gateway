@@ -4,10 +4,10 @@ from uuid import uuid4
 
 import pytest
 
-from rag_service.auth.services import AuthService
-from rag_service.exceptions import UnauthorizedError
-from rag_service.security.passwords import hash_password
-from rag_service.users.models import Role
+from knowledge_gateway.auth.services import AuthService
+from knowledge_gateway.exceptions import UnauthorizedError
+from knowledge_gateway.security.passwords import hash_password
+from knowledge_gateway.users.models import Role
 
 
 class FakeUserService:

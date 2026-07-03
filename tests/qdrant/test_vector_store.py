@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 from qdrant_client.models import Distance, VectorParams
 
-from rag_service.qdrant.vector_store import QdrantVectorStore
+from knowledge_gateway.qdrant.vector_store import QdrantVectorStore
 
 
 class FakeQdrantClient:
@@ -53,6 +53,68 @@ def test_search_returns_empty_list_when_collection_does_not_exist() -> None:
 
     assert results == []
     assert not client.query_points_called
+
+
+class RecordingQdrantClient:
+    """Fake client that records ``query_points`` kwargs and returns a single point."""
+
+    def __init__(self) -> None:
+        self.query_points_kwargs: dict | None = None
+
+    async def collection_exists(self, collection_name: str) -> bool:
+        return True
+
+    async def query_points(self, **kwargs):
+        self.query_points_kwargs = kwargs
+        point = SimpleNamespace(
+            score=0.9,
+            payload={
+                "document_id": "doc-1",
+                "chunk_id": "chunk-1",
+                "chunk_index": 0,
+                "content": "Matching content",
+            },
+        )
+        return SimpleNamespace(points=[point])
+
+
+def test_search_forwards_score_threshold_to_query_points() -> None:
+    client = RecordingQdrantClient()
+    vector_store = object.__new__(QdrantVectorStore)
+    vector_store.client = client
+
+    results = asyncio.run(
+        vector_store.search(
+            collection_name="documents",
+            knowledge_base_id="kb-1",
+            query_embedding=[0.1, 0.2],
+            limit=5,
+            score_threshold=0.7,
+        )
+    )
+
+    assert client.query_points_kwargs is not None
+    assert client.query_points_kwargs["score_threshold"] == 0.7
+    assert len(results) == 1
+    assert results[0].content == "Matching content"
+
+
+def test_search_defaults_score_threshold_to_none() -> None:
+    client = RecordingQdrantClient()
+    vector_store = object.__new__(QdrantVectorStore)
+    vector_store.client = client
+
+    asyncio.run(
+        vector_store.search(
+            collection_name="documents",
+            knowledge_base_id="kb-1",
+            query_embedding=[0.1, 0.2],
+            limit=5,
+        )
+    )
+
+    assert client.query_points_kwargs is not None
+    assert client.query_points_kwargs["score_threshold"] is None
 
 
 def test_ensure_collection_creates_when_missing() -> None:

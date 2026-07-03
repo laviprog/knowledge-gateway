@@ -1,16 +1,28 @@
 import type { HttpError } from "@refinedev/core";
 import { useDelete, useInvalidate, useList } from "@refinedev/core";
 import { useState } from "react";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
+import { CopyButton } from "@/components/copy-button";
 import { DataPagination } from "@/components/data-pagination";
+import { DetailDialog, DetailRow } from "@/components/detail-dialog";
+import { FilterBar, FilterField } from "@/components/filters";
 import { FormDialog } from "@/components/form-dialog";
 import { SelectField } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
+import { RelativeTime } from "@/components/relative-time";
 import { type Column, ResourceTable } from "@/components/resource-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { apiUpload } from "@/lib/api";
 import type { DocumentIndexStatus, DocumentItem, KnowledgeBase } from "@/types";
 
@@ -28,15 +40,32 @@ const STATUS_VARIANT: Record<
 };
 
 export function DocumentsList() {
+	const [searchParams] = useSearchParams();
 	const [currentPage, setCurrentPage] = useState(1);
 	const [uploadOpen, setUploadOpen] = useState(false);
 	const [knowledgeBaseId, setKnowledgeBaseId] = useState("");
+	// A `knowledge_base_id` query param (e.g. from a knowledge base's detail view) pre-selects
+	// the filter.
+	const [filterKbId, setFilterKbId] = useState(
+		searchParams.get("knowledge_base_id") ?? "all",
+	);
+	const [detail, setDetail] = useState<DocumentItem | null>(null);
 	const [file, setFile] = useState<File | null>(null);
 	const [uploading, setUploading] = useState(false);
 
 	const { result, query } = useList<DocumentItem>({
 		resource: RESOURCE,
 		pagination: { currentPage, pageSize: PAGE_SIZE },
+		filters:
+			filterKbId === "all"
+				? undefined
+				: [
+						{
+							field: "knowledge_base_id",
+							operator: "eq",
+							value: filterKbId,
+						},
+					],
 	});
 	const { result: kbResult } = useList<KnowledgeBase>({
 		resource: "knowledge-bases",
@@ -81,6 +110,10 @@ export function DocumentsList() {
 			),
 		},
 		{ header: "Chunks", cell: (doc) => doc.chunks_count },
+		{
+			header: "Indexed",
+			cell: (doc) => <RelativeTime value={doc.indexed_at} />,
+		},
 	];
 
 	const openUpload = () => {
@@ -117,12 +150,47 @@ export function DocumentsList() {
 				actions={<Button onClick={openUpload}>Upload document</Button>}
 			/>
 
+			<FilterBar
+				onReset={
+					filterKbId === "all"
+						? undefined
+						: () => {
+								setFilterKbId("all");
+								setCurrentPage(1);
+							}
+				}
+			>
+				<FilterField label="Knowledge base">
+					<Select
+						value={filterKbId}
+						onValueChange={(value) => {
+							setFilterKbId(value);
+							setCurrentPage(1);
+						}}
+					>
+						<SelectTrigger className="w-56">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All knowledge bases</SelectItem>
+							{knowledgeBases.map((kb) => (
+								<SelectItem key={kb.id} value={kb.id}>
+									{kb.public_id}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</FilterField>
+			</FilterBar>
+
 			<ResourceTable
 				columns={columns}
 				rows={result?.data ?? []}
 				isLoading={query.isLoading}
 				getRowId={(doc) => doc.id}
+				onRowClick={setDetail}
 				onDelete={(doc) => remove({ resource: RESOURCE, id: doc.id })}
+				getDeleteLabel={(doc) => doc.title}
 				emptyLabel="No documents"
 			/>
 
@@ -130,6 +198,8 @@ export function DocumentsList() {
 				currentPage={currentPage}
 				pageCount={pageCount}
 				onPageChange={setCurrentPage}
+				total={total}
+				pageSize={PAGE_SIZE}
 			/>
 
 			<FormDialog
@@ -158,6 +228,67 @@ export function DocumentsList() {
 					/>
 				</div>
 			</FormDialog>
+
+			<DetailDialog
+				open={detail !== null}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDetail(null);
+					}
+				}}
+				title={detail?.title ?? "Document"}
+				description="Document details and indexing status"
+			>
+				{detail ? (
+					<>
+						<DetailRow label="ID" mono>
+							<span className="inline-flex items-center gap-1">
+								{detail.id}
+								<CopyButton value={detail.id} />
+							</span>
+						</DetailRow>
+						<DetailRow label="Knowledge base">
+							{kbLabel(detail.knowledge_base_id)}
+						</DetailRow>
+						<DetailRow label="Status">
+							<Badge
+								variant={STATUS_VARIANT[detail.index_status]}
+								className="capitalize"
+							>
+								{detail.index_status}
+							</Badge>
+						</DetailRow>
+						{detail.index_error ? (
+							<DetailRow label="Index error">
+								<span className="text-destructive">{detail.index_error}</span>
+							</DetailRow>
+						) : null}
+						<DetailRow label="Chunks">{detail.chunks_count}</DetailRow>
+						<DetailRow label="Source">{detail.source ?? "—"}</DetailRow>
+						<DetailRow label="Content hash" mono>
+							{detail.content_hash}
+						</DetailRow>
+						<DetailRow label="Indexed at">
+							<RelativeTime value={detail.indexed_at} />
+						</DetailRow>
+						<DetailRow label="Created at">
+							<RelativeTime value={detail.created_at} />
+						</DetailRow>
+						{Object.keys(detail.source_metadata).length > 0 ? (
+							<DetailRow label="Metadata" mono>
+								<pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded bg-muted p-2">
+									{JSON.stringify(detail.source_metadata, null, 2)}
+								</pre>
+							</DetailRow>
+						) : null}
+						<DetailRow label="Content">
+							<pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 text-xs">
+								{detail.content}
+							</pre>
+						</DetailRow>
+					</>
+				) : null}
+			</DetailDialog>
 		</div>
 	);
 }

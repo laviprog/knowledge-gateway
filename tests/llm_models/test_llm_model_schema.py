@@ -1,9 +1,9 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from rag_service.llm_models.models import LlmModel
-from rag_service.llm_models.schema import LlmModel as LlmModelSchema
-from rag_service.llm_models.schema import OpenAIModel, OpenAIModelsList
+from knowledge_gateway.llm_models.models import LlmModel
+from knowledge_gateway.llm_models.schema import LlmModel as LlmModelSchema
+from knowledge_gateway.llm_models.schema import OpenAIModel, OpenAIModelsList
 
 
 def test_llm_model_schema_validates_model() -> None:

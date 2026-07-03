@@ -3,8 +3,8 @@ from uuid import uuid4
 
 import pytest
 
-import rag_service.redis.rate_limiter as rate_limiter_module
-from rag_service.redis.rate_limiter import is_rate_limited
+import knowledge_gateway.redis.rate_limiter as rate_limiter_module
+from knowledge_gateway.redis.rate_limiter import is_rate_limited
 
 
 class FakeRedisClient:

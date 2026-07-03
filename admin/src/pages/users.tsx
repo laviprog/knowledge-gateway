@@ -1,5 +1,6 @@
 import { useCreate, useDelete, useList, useUpdate } from "@refinedev/core";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { DataPagination } from "@/components/data-pagination";
 import { FormDialog } from "@/components/form-dialog";
 import { SelectField, TextField } from "@/components/form-fields";
@@ -52,6 +53,7 @@ export function UsersList() {
 	const [form, setForm] = useState<UserForm>(EMPTY_FORM);
 	const [submitting, setSubmitting] = useState(false);
 	const [keysUser, setKeysUser] = useState<User | null>(null);
+	const navigate = useNavigate();
 
 	const { result, query } = useList<User>({
 		resource: RESOURCE,
@@ -116,10 +118,20 @@ export function UsersList() {
 				getRowId={(user) => user.id}
 				onEdit={openEdit}
 				onDelete={(user) => remove({ resource: RESOURCE, id: user.id })}
+				getDeleteLabel={(user) => user.name}
 				extraActions={(user) => (
-					<Button variant="ghost" size="sm" onClick={() => setKeysUser(user)}>
-						Keys
-					</Button>
+					<>
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={() => navigate(`/requests?user_id=${user.id}`)}
+						>
+							Requests
+						</Button>
+						<Button variant="ghost" size="sm" onClick={() => setKeysUser(user)}>
+							Keys
+						</Button>
+					</>
 				)}
 				emptyLabel="No users"
 			/>
@@ -128,6 +140,8 @@ export function UsersList() {
 				currentPage={currentPage}
 				pageCount={pageCount}
 				onPageChange={setCurrentPage}
+				total={total}
+				pageSize={PAGE_SIZE}
 			/>
 
 			<FormDialog

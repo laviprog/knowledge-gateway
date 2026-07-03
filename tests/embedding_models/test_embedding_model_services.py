@@ -3,9 +3,28 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from rag_service.embedding_models.models import EmbeddingModel
-from rag_service.embedding_models.services import EmbeddingModelService
-from rag_service.exceptions import BadRequestError, ConflictError, NotFoundError
+from knowledge_gateway.embedding_models.models import EmbeddingModel
+from knowledge_gateway.embedding_models.services import EmbeddingModelService
+from knowledge_gateway.exceptions import BadRequestError, ConflictError, NotFoundError
+from knowledge_gateway.knowledge_bases.models import KnowledgeBaseModel
+
+
+class FakeKnowledgeBaseRepository:
+    def __init__(self, knowledge_base: KnowledgeBaseModel | None = None) -> None:
+        self.knowledge_base = knowledge_base
+
+    async def get_one_or_none(self, *filters, **kwargs) -> KnowledgeBaseModel | None:
+        if self.knowledge_base is None:
+            return None
+
+        if embedding_model_id := kwargs.get("embedding_model_id"):
+            return (
+                self.knowledge_base
+                if self.knowledge_base.embedding_model_id == embedding_model_id
+                else None
+            )
+
+        return self.knowledge_base
 
 
 class FakeEmbeddingModelRepository:
@@ -139,8 +158,27 @@ def test_delete_embedding_model_soft_deletes() -> None:
     model = build_embedding_model()
     service = object.__new__(EmbeddingModelService)
     service._repository_instance = FakeEmbeddingModelRepository(model)
+    service.knowledge_base_repository = FakeKnowledgeBaseRepository()
 
     asyncio.run(service.delete_embedding_model(model.id))
 
     assert model.is_deleted
     assert service.repository.updated_model == model
+
+
+def test_delete_embedding_model_rejected_when_referenced_by_knowledge_base() -> None:
+    model = build_embedding_model()
+    referencing_kb = KnowledgeBaseModel(
+        id=uuid4(),
+        public_id="support",
+        name="Support",
+        embedding_model_id=model.id,
+    )
+    service = object.__new__(EmbeddingModelService)
+    service._repository_instance = FakeEmbeddingModelRepository(model)
+    service.knowledge_base_repository = FakeKnowledgeBaseRepository(referencing_kb)
+
+    with pytest.raises(ConflictError):
+        asyncio.run(service.delete_embedding_model(model.id))
+
+    assert not model.is_deleted
