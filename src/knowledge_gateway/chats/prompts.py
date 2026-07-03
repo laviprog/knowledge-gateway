@@ -1,14 +1,23 @@
+from typing import TYPE_CHECKING
+
 from knowledge_gateway.config import settings
 from knowledge_gateway.exceptions import BadRequestError
 from knowledge_gateway.qdrant.schema import VectorSearchResult
 
 from .schema import ChatMessage
 
-RAG_SYSTEM_INSTRUCTION = """
-Use the knowledge base context below to answer the user.
-If the context does not contain enough information, say that the information is insufficient.
-Keep the answer concise and suitable for a voice assistant.
-""".strip()
+if TYPE_CHECKING:
+    from knowledge_gateway.knowledge_bases.models import KnowledgeBaseModel
+
+
+def resolve_rag_instruction(knowledge_base: "KnowledgeBaseModel | None") -> str:
+    """
+    Resolve the RAG system instruction: a knowledge base's ``system_prompt`` overrides the
+    global ``RAG_SYSTEM_INSTRUCTION`` setting.
+    """
+    if knowledge_base is not None and knowledge_base.system_prompt:
+        return knowledge_base.system_prompt
+    return settings.RAG_SYSTEM_INSTRUCTION
 
 
 def get_latest_user_message(messages: list[ChatMessage]) -> str:
@@ -25,11 +34,12 @@ def get_latest_user_message(messages: list[ChatMessage]) -> str:
 def build_rag_messages(
     messages: list[ChatMessage],
     context_chunks: list[VectorSearchResult],
+    system_instruction: str | None = None,
 ) -> list[dict[str, str]]:
     """
     Build chat messages with RAG context.
     """
-    system_content = build_system_content(messages, context_chunks)
+    system_content = build_system_content(messages, context_chunks, system_instruction)
     conversation_messages = [
         {"role": message.role, "content": message.content}
         for message in messages
@@ -42,19 +52,21 @@ def build_rag_messages(
 def build_system_content(
     messages: list[ChatMessage],
     context_chunks: list[VectorSearchResult],
+    system_instruction: str | None = None,
 ) -> str:
     """
     Build system prompt content.
     """
+    instruction = (
+        system_instruction if system_instruction is not None else settings.RAG_SYSTEM_INSTRUCTION
+    )
     user_system_content = "\n\n".join(
         message.content for message in messages if message.role == "system" and message.content
     )
     context_content = format_context_chunks(context_chunks)
 
     sections = [
-        section
-        for section in [user_system_content, RAG_SYSTEM_INSTRUCTION, context_content]
-        if section
+        section for section in [user_system_content, instruction, context_content] if section
     ]
     return "\n\n".join(sections)
 

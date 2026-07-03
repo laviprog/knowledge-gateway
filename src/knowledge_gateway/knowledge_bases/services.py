@@ -85,6 +85,8 @@ class KnowledgeBaseService(
         name: str,
         embedding_model_id: UUID,
         description: str | None = None,
+        min_score: float | None = None,
+        system_prompt: str | None = None,
     ) -> KnowledgeBaseModel:
         """
         Create a knowledge base bound to an existing embedding model.
@@ -98,6 +100,8 @@ class KnowledgeBaseService(
                 name=name,
                 embedding_model_id=embedding_model_id,
                 description=description,
+                min_score=min_score,
+                system_prompt=system_prompt,
             ),
             auto_commit=True,
         )
@@ -108,6 +112,8 @@ class KnowledgeBaseService(
         public_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
+        min_score: float | None = None,
+        system_prompt: str | None = None,
     ) -> KnowledgeBaseModel:
         """
         Update an active knowledge base.
@@ -126,6 +132,12 @@ class KnowledgeBaseService(
 
         if description is not None:
             knowledge_base.description = description
+
+        if min_score is not None:
+            knowledge_base.min_score = min_score
+
+        if system_prompt is not None:
+            knowledge_base.system_prompt = system_prompt
 
         return await self.repository.update(knowledge_base, auto_commit=True)
 

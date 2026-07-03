@@ -17,12 +17,17 @@ class KnowledgeBaseCreate(BaseSchema):
     name: str = Field(min_length=1, max_length=255)
     embedding_model_id: UUID
     description: str | None = None
+    # Retrieval overrides; when unset the global RAG settings apply.
+    min_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    system_prompt: str | None = None
 
 
 class KnowledgeBaseUpdate(BaseSchema):
     public_id: str | None = Field(default=None, min_length=1, max_length=255)
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = None
+    min_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    system_prompt: str | None = None
 
 
 class KnowledgeBaseIndexStatusCounts(BaseSchema):
@@ -39,6 +44,8 @@ class KnowledgeBase(BaseSchema):
     embedding_model_id: UUID
     embedding_model_public_id: str | None
     description: str | None
+    min_score: float | None = None
+    system_prompt: str | None = None
     document_count: int = 0
     index_status_counts: KnowledgeBaseIndexStatusCounts = Field(
         default_factory=KnowledgeBaseIndexStatusCounts

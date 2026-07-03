@@ -276,6 +276,13 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
         embedding_model = knowledge_base.embedding_model
         embedding_client = self._embedding_client_for(embedding_model)
 
+        # Per-knowledge-base override wins; otherwise fall back to the global threshold.
+        score_threshold = (
+            knowledge_base.min_score
+            if knowledge_base.min_score is not None
+            else settings.RAG_MIN_SCORE
+        )
+
         embedding_start = time.perf_counter()
         embeddings = await embedding_client.embed_texts([query])
         embedding_ms = round((time.perf_counter() - embedding_start) * 1000, 2)
@@ -286,6 +293,7 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
             knowledge_base_id=str(knowledge_base.id),
             query_embedding=embeddings[0],
             limit=limit,
+            score_threshold=score_threshold,
         )
         qdrant_search_ms = round((time.perf_counter() - qdrant_start) * 1000, 2)
 
@@ -301,6 +309,7 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[DocumentModel, DocumentRe
             collection=embedding_model.collection_name,
             query_length=len(query),
             limit=limit,
+            score_threshold=score_threshold,
             results_count=len(search_results),
             embedding_ms=timings.embedding_ms,
             qdrant_search_ms=timings.qdrant_search_ms,

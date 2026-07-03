@@ -104,6 +104,8 @@ async def create_knowledge_base(
         name=knowledge_base_create.name,
         embedding_model_id=knowledge_base_create.embedding_model_id,
         description=knowledge_base_create.description,
+        min_score=knowledge_base_create.min_score,
+        system_prompt=knowledge_base_create.system_prompt,
     )
     return KnowledgeBase.from_model(knowledge_base)
 
@@ -133,6 +135,8 @@ async def update_knowledge_base(
         public_id=knowledge_base_update.public_id,
         name=knowledge_base_update.name,
         description=knowledge_base_update.description,
+        min_score=knowledge_base_update.min_score,
+        system_prompt=knowledge_base_update.system_prompt,
     )
     return KnowledgeBase.from_model(knowledge_base)
 

@@ -154,6 +154,7 @@ class QdrantVectorStore:
         knowledge_base_id: str,
         query_embedding: list[float],
         limit: int,
+        score_threshold: float | None = None,
     ) -> list[VectorSearchResult]:
         """
         Search chunks within a single knowledge base by query embedding.
@@ -178,6 +179,7 @@ class QdrantVectorStore:
                 ]
             ),
             limit=limit,
+            score_threshold=score_threshold,
             with_payload=True,
             with_vectors=False,
         )
@@ -200,6 +202,7 @@ class QdrantVectorStore:
             collection=collection_name,
             knowledge_base_id=knowledge_base_id,
             limit=limit,
+            score_threshold=score_threshold,
             results_count=len(results),
         )
         return results

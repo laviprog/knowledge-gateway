@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import Float, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from knowledge_gateway.database.base_model import BaseModel
@@ -23,6 +23,12 @@ class KnowledgeBaseModel(BaseModel):
     public_id: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[str | None]
+
+    # Optional per-knowledge-base retrieval overrides; fall back to the global settings when unset.
+    # Minimum similarity score a retrieved chunk must reach to be used as context.
+    min_score: Mapped[float | None] = mapped_column(Float)
+    # System instruction prepended to the RAG prompt for this knowledge base.
+    system_prompt: Mapped[str | None] = mapped_column(Text)
 
     embedding_model_id: Mapped[UUID] = mapped_column(ForeignKey("embedding_models.id"), index=True)
     embedding_model: Mapped["EmbeddingModel"] = relationship(
