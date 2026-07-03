@@ -145,6 +145,7 @@ async def update_embedding_model(
         },
         **auth_responses,
         **not_found_response,
+        **conflict_response,
         **internal_server_error_response,
     },
 )

@@ -28,7 +28,7 @@ class DocumentIndexStatus(BaseEnum):
 
 class DocumentModel(BaseModel):
     """
-    Document stored in the global knowledge base.
+    Document stored in a knowledge base.
     """
 
     __tablename__ = "documents"

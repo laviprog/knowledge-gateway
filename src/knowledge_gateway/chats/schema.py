@@ -34,6 +34,7 @@ class ChatCompletionRequest(BaseSchema):
     # Non-standard extension (clients pass it via OpenAI SDK `extra_body`). Selects the
     # knowledge base for RAG retrieval; when omitted, the request runs without retrieval.
     knowledge_base_id: UUID | None = None
+    knowledge_base: str | None = Field(default=None, min_length=1, max_length=255)
 
     model_config: ClassVar[ConfigDict] = ConfigDict(from_attributes=True, extra="ignore")
 
@@ -82,6 +83,10 @@ class ChatCompletionRequestLog(BaseSchema):
     model_public_id: str
     provider: str | None
     provider_model: str | None
+    knowledge_base_id: UUID | None
+    knowledge_base_public_id: str | None
+    used_retrieval: bool
+    retrieved_document_ids: list[UUID] | None
     request_id: str
     completion_id: str | None
     stream: bool
@@ -123,8 +128,15 @@ class ChatCompletionModelStats(BaseSchema):
     avg_total_ms: float | None
 
 
+class ChatCompletionKnowledgeBaseStats(BaseSchema):
+    knowledge_base_id: UUID | None
+    knowledge_base_public_id: str | None
+    requests: int
+
+
 class ChatCompletionStats(BaseSchema):
     total_requests: int
+    retrieval_requests: int
     by_status: list[ChatCompletionStatusCount]
     prompt_tokens_total: int | None
     completion_tokens_total: int | None
@@ -134,6 +146,7 @@ class ChatCompletionStats(BaseSchema):
     avg_llm_generation_ms: float | None
     avg_total_ms: float | None
     by_model: list[ChatCompletionModelStats]
+    by_knowledge_base: list[ChatCompletionKnowledgeBaseStats]
 
 
 OpenAIChunk = dict[str, Any]

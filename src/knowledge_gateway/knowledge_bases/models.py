@@ -29,3 +29,7 @@ class KnowledgeBaseModel(BaseModel):
         "EmbeddingModel",
         lazy="selectin",
     )
+
+    @property
+    def embedding_model_public_id(self) -> str | None:
+        return self.embedding_model.public_id if self.embedding_model is not None else None

@@ -29,6 +29,7 @@ from knowledge_gateway.utils import generate_uuid
 from .prompts import build_rag_messages, get_latest_user_message
 from .schema import (
     ChatCompletionChoice,
+    ChatCompletionKnowledgeBaseStats,
     ChatCompletionMessage,
     ChatCompletionModelStats,
     ChatCompletionRequest,
@@ -64,6 +65,7 @@ class ChatCompletionPlan:
     created: int
     request: ChatCompletionRequest
     llm_model: LlmModel
+    knowledge_base: "KnowledgeBaseModel | None"
     messages: list[dict[str, str]]
     retrieval: DocumentSearchWithMetrics
     started_at: float
@@ -124,7 +126,7 @@ class ChatCompletionService:
         """
         started_at = time.perf_counter()
         llm_model = await self.llm_model_service.get_by_public_id_or_raise(chat_request.model)
-        knowledge_base = await self._resolve_knowledge_base(chat_request.knowledge_base_id)
+        knowledge_base = await self._resolve_knowledge_base(chat_request)
 
         log.info(
             "Chat completion started",
@@ -160,25 +162,40 @@ class ChatCompletionService:
             created=int(time.time()),
             request=chat_request,
             llm_model=llm_model,
+            knowledge_base=knowledge_base,
             messages=messages,
             retrieval=retrieval,
             started_at=started_at,
         )
 
     async def _resolve_knowledge_base(
-        self, knowledge_base_id: "UUID | None"
+        self, chat_request: ChatCompletionRequest
     ) -> "KnowledgeBaseModel | None":
         """
-        Resolve the knowledge base requested in the chat request body. ``None`` means no
-        retrieval; an unknown id is a client error.
+        Resolve the knowledge base requested in the chat request body, either by
+        ``knowledge_base_id`` (UUID) or by ``knowledge_base`` (public id). ``None`` means no
+        retrieval; an unknown selector is a client error.
         """
-        if knowledge_base_id is None or self.knowledge_base_service is None:
+        if self.knowledge_base_service is None:
             return None
 
-        knowledge_base = await self.knowledge_base_service.get_by_id_or_none(knowledge_base_id)
-        if knowledge_base is None:
-            raise BadRequestError("Knowledge base not found")
-        return knowledge_base
+        if chat_request.knowledge_base_id is not None:
+            knowledge_base = await self.knowledge_base_service.get_by_id_or_none(
+                chat_request.knowledge_base_id
+            )
+            if knowledge_base is None:
+                raise BadRequestError("Knowledge base not found")
+            return knowledge_base
+
+        if chat_request.knowledge_base is not None:
+            knowledge_base = await self.knowledge_base_service.get_by_public_id_or_none(
+                chat_request.knowledge_base
+            )
+            if knowledge_base is None:
+                raise BadRequestError("Knowledge base not found")
+            return knowledge_base
+
+        return None
 
     async def stream_completion(
         self,
@@ -583,6 +600,7 @@ class ChatCompletionRequestLogService(
         user_id: UUID | None = None,
         api_key_id: UUID | None = None,
         model: str | None = None,
+        knowledge_base_id: UUID | None = None,
         status: ChatCompletionRequestStatus | None = None,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
@@ -596,6 +614,7 @@ class ChatCompletionRequestLogService(
             user_id=user_id,
             api_key_id=api_key_id,
             model=model,
+            knowledge_base_id=knowledge_base_id,
             status=status,
             date_from=date_from,
             date_to=date_to,
@@ -622,18 +641,20 @@ class ChatCompletionRequestLogService(
         user_id: UUID | None = None,
         api_key_id: UUID | None = None,
         model: str | None = None,
+        knowledge_base_id: UUID | None = None,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
     ) -> ChatCompletionStats:
         """
         Aggregate usage metrics (totals, token sums/averages, latency averages) over the
-        filtered usage-log rows, plus a per-model breakdown.
+        filtered usage-log rows, plus per-model and per-knowledge-base breakdowns.
         """
         model_cls = ChatCompletionRequestLogModel
         filters = self._build_filters(
             user_id=user_id,
             api_key_id=api_key_id,
             model=model,
+            knowledge_base_id=knowledge_base_id,
             status=None,
             date_from=date_from,
             date_to=date_to,
@@ -649,6 +670,7 @@ class ChatCompletionRequestLogService(
             func.avg(model_cls.llm_ttfb_ms),
             func.avg(model_cls.llm_generation_ms),
             func.avg(model_cls.total_ms),
+            func.count().filter(model_cls.used_retrieval.is_(True)),
         ).where(*filters)
         totals_row = (await session.execute(totals_statement)).one()
 
@@ -670,8 +692,22 @@ class ChatCompletionRequestLogService(
         )
         model_rows = (await session.execute(model_statement)).all()
 
+        # Per-knowledge-base breakdown over retrieval requests only.
+        kb_statement = (
+            select(
+                model_cls.knowledge_base_id,
+                model_cls.knowledge_base_public_id,
+                func.count(),
+            )
+            .where(*filters, model_cls.used_retrieval.is_(True))
+            .group_by(model_cls.knowledge_base_id, model_cls.knowledge_base_public_id)
+            .order_by(func.count().desc())
+        )
+        kb_rows = (await session.execute(kb_statement)).all()
+
         return ChatCompletionStats(
             total_requests=totals_row[0],
+            retrieval_requests=totals_row[8],
             by_status=[
                 ChatCompletionStatusCount(status=status, count=count)
                 for status, count in status_rows
@@ -692,6 +728,14 @@ class ChatCompletionRequestLogService(
                 )
                 for model_public_id, requests, total_tokens, avg_total_ms in model_rows
             ],
+            by_knowledge_base=[
+                ChatCompletionKnowledgeBaseStats(
+                    knowledge_base_id=kb_id,
+                    knowledge_base_public_id=kb_public_id,
+                    requests=requests,
+                )
+                for kb_id, kb_public_id, requests in kb_rows
+            ],
         )
 
     @staticmethod
@@ -700,6 +744,7 @@ class ChatCompletionRequestLogService(
         user_id: UUID | None,
         api_key_id: UUID | None,
         model: str | None,
+        knowledge_base_id: UUID | None,
         status: ChatCompletionRequestStatus | None,
         date_from: datetime | None,
         date_to: datetime | None,
@@ -714,6 +759,8 @@ class ChatCompletionRequestLogService(
             filters.append(ChatCompletionRequestLogModel.api_key_id == api_key_id)
         if model is not None:
             filters.append(ChatCompletionRequestLogModel.model_public_id == model)
+        if knowledge_base_id is not None:
+            filters.append(ChatCompletionRequestLogModel.knowledge_base_id == knowledge_base_id)
         if status is not None:
             filters.append(ChatCompletionRequestLogModel.status == status)
         if date_from is not None:
@@ -736,6 +783,14 @@ class ChatCompletionRequestLogService(
         request_log.embedding_ms = plan.retrieval.timings.embedding_ms
         request_log.qdrant_search_ms = plan.retrieval.timings.qdrant_search_ms
         request_log.retrieval_total_ms = plan.retrieval.timings.total_ms
+
+        request_log.used_retrieval = plan.knowledge_base is not None
+        if plan.knowledge_base is not None:
+            request_log.knowledge_base_id = plan.knowledge_base.id
+            request_log.knowledge_base_public_id = plan.knowledge_base.public_id
+            request_log.retrieved_document_ids = sorted(
+                {result.document_id for result in plan.retrieval.results}
+            )
 
     @staticmethod
     def apply_metrics(

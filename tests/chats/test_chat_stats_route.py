@@ -17,6 +17,7 @@ _STATS_URL = "/chat-completion-requests/stats"
 
 _CANNED_STATS = ChatCompletionStats(
     total_requests=3,
+    retrieval_requests=2,
     by_status=[
         ChatCompletionStatusCount(status=ChatCompletionRequestStatus.SUCCEEDED, count=2),
         ChatCompletionStatusCount(status=ChatCompletionRequestStatus.FAILED, count=1),
@@ -36,6 +37,7 @@ _CANNED_STATS = ChatCompletionStats(
             avg_total_ms=35.0,
         )
     ],
+    by_knowledge_base=[],
 )
 
 
