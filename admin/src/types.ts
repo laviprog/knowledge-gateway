@@ -39,12 +39,24 @@ export type EmbeddingModel = {
 	description: string | null;
 } & Timestamps;
 
+export type KnowledgeBaseIndexStatusCounts = {
+	pending: number;
+	indexing: number;
+	indexed: number;
+	failed: number;
+};
+
 export type KnowledgeBase = {
 	id: string;
 	public_id: string;
 	name: string;
 	embedding_model_id: string;
+	embedding_model_public_id: string | null;
 	description: string | null;
+	min_score: number | null;
+	system_prompt: string | null;
+	document_count: number;
+	index_status_counts: KnowledgeBaseIndexStatusCounts;
 } & Timestamps;
 
 export type LlmModel = {
@@ -79,8 +91,10 @@ export type DocumentItem = {
 	id: string;
 	knowledge_base_id: string;
 	title: string;
+	content: string;
 	content_hash: string;
 	source: string | null;
+	source_metadata: Record<string, unknown>;
 	chunks_count: number;
 	index_status: DocumentIndexStatus;
 	index_error: string | null;
@@ -105,8 +119,15 @@ export type ChatModelStats = {
 	avg_total_ms: number | null;
 };
 
+export type ChatKnowledgeBaseStats = {
+	knowledge_base_id: string | null;
+	knowledge_base_public_id: string | null;
+	requests: number;
+};
+
 export type ChatCompletionStats = {
 	total_requests: number;
+	retrieval_requests: number;
 	by_status: ChatStatusCount[];
 	prompt_tokens_total: number | null;
 	completion_tokens_total: number | null;
@@ -116,6 +137,7 @@ export type ChatCompletionStats = {
 	avg_llm_generation_ms: number | null;
 	avg_total_ms: number | null;
 	by_model: ChatModelStats[];
+	by_knowledge_base: ChatKnowledgeBaseStats[];
 };
 
 export type ChatRequestLog = {
@@ -123,8 +145,15 @@ export type ChatRequestLog = {
 	request_id: string;
 	user_id: string;
 	api_key_id: string;
+	model_id: string | null;
 	model_public_id: string;
 	provider: string | null;
+	provider_model: string | null;
+	knowledge_base_id: string | null;
+	knowledge_base_public_id: string | null;
+	used_retrieval: boolean;
+	retrieved_document_ids: string[] | null;
+	completion_id: string | null;
 	stream: boolean;
 	status: ChatRequestStatus;
 	error_code: string | null;
@@ -132,8 +161,17 @@ export type ChatRequestLog = {
 	prompt_tokens: number | null;
 	completion_tokens: number | null;
 	total_tokens: number | null;
+	chunks_count: number | null;
+	retrieval_total_ms: number | null;
+	embedding_ms: number | null;
+	qdrant_search_ms: number | null;
+	llm_ttfb_ms: number | null;
+	llm_generation_ms: number | null;
 	total_ms: number | null;
+	messages_count: number | null;
+	query_length: number | null;
 	created_at: string;
+	updated_at: string;
 };
 
 export type ChatRequestLogsList = {

@@ -1,3 +1,4 @@
+import { useList } from "@refinedev/core";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { FilterBar, FilterField } from "@/components/filters";
@@ -5,6 +6,13 @@ import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import {
 	Table,
 	TableBody,
@@ -14,7 +22,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { apiFetch } from "@/lib/api";
-import type { ChatCompletionStats } from "@/types";
+import type { ChatCompletionStats, KnowledgeBase } from "@/types";
 
 const nf = new Intl.NumberFormat();
 
@@ -40,12 +48,22 @@ function StatCard({ label, value }: { label: string; value: string }) {
 
 export function AnalyticsPage() {
 	const [model, setModel] = useState("");
+	const [kbFilter, setKbFilter] = useState("all");
 	const [dateFrom, setDateFrom] = useState("");
 	const [dateTo, setDateTo] = useState("");
+
+	const { result: kbResult } = useList<KnowledgeBase>({
+		resource: "knowledge-bases",
+		pagination: { currentPage: 1, pageSize: 100 },
+	});
+	const knowledgeBases = kbResult?.data ?? [];
 
 	const params = new URLSearchParams();
 	if (model.trim() !== "") {
 		params.set("model", model.trim());
+	}
+	if (kbFilter !== "all") {
+		params.set("knowledge_base_id", kbFilter);
 	}
 	if (dateFrom !== "") {
 		params.set("date_from", new Date(dateFrom).toISOString());
@@ -56,7 +74,7 @@ export function AnalyticsPage() {
 	const query = params.toString();
 
 	const { data, isLoading, isError, error } = useQuery({
-		queryKey: ["chat-completion-stats", model, dateFrom, dateTo],
+		queryKey: ["chat-completion-stats", model, kbFilter, dateFrom, dateTo],
 		queryFn: () =>
 			apiFetch<ChatCompletionStats>(
 				`/chat-completion-requests/stats${query ? `?${query}` : ""}`,
@@ -65,6 +83,7 @@ export function AnalyticsPage() {
 
 	const reset = () => {
 		setModel("");
+		setKbFilter("all");
 		setDateFrom("");
 		setDateTo("");
 	};
@@ -81,6 +100,21 @@ export function AnalyticsPage() {
 						placeholder="model public id"
 						className="w-48"
 					/>
+				</FilterField>
+				<FilterField label="Knowledge base">
+					<Select value={kbFilter} onValueChange={setKbFilter}>
+						<SelectTrigger className="w-48">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All knowledge bases</SelectItem>
+							{knowledgeBases.map((kb) => (
+								<SelectItem key={kb.id} value={kb.id}>
+									{kb.public_id}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 				</FilterField>
 				<FilterField label="From">
 					<Input
@@ -116,6 +150,10 @@ function Stats({ data }: { data: ChatCompletionStats }) {
 		<>
 			<div className="grid grid-cols-2 gap-4 md:grid-cols-4">
 				<StatCard label="Total requests" value={num(data.total_requests)} />
+				<StatCard
+					label="Retrieval requests"
+					value={num(data.retrieval_requests)}
+				/>
 				<StatCard label="Total tokens" value={num(data.total_tokens_total)} />
 				<StatCard label="Prompt tokens" value={num(data.prompt_tokens_total)} />
 				<StatCard
@@ -182,6 +220,43 @@ function Stats({ data }: { data: ChatCompletionStats }) {
 										</TableCell>
 										<TableCell className="text-right">
 											{ms(model.avg_total_ms)}
+										</TableCell>
+									</TableRow>
+								))
+							)}
+						</TableBody>
+					</Table>
+				</div>
+			</div>
+
+			<div className="flex flex-col gap-2">
+				<h2 className="text-lg font-semibold">By knowledge base</h2>
+				<div className="rounded-md border">
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead>Knowledge base</TableHead>
+								<TableHead className="text-right">Requests</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{data.by_knowledge_base.length === 0 ? (
+								<TableRow>
+									<TableCell
+										colSpan={2}
+										className="text-center text-muted-foreground"
+									>
+										No data
+									</TableCell>
+								</TableRow>
+							) : (
+								data.by_knowledge_base.map((kb) => (
+									<TableRow key={kb.knowledge_base_id ?? "none"}>
+										<TableCell className="font-medium">
+											{kb.knowledge_base_public_id ?? "No retrieval"}
+										</TableCell>
+										<TableCell className="text-right">
+											{nf.format(kb.requests)}
 										</TableCell>
 									</TableRow>
 								))

@@ -138,6 +138,7 @@ export function LlmModelsList() {
 				getRowId={(model) => model.id}
 				onEdit={openEdit}
 				onDelete={(model) => remove({ resource: RESOURCE, id: model.id })}
+				getDeleteLabel={(model) => model.public_id}
 				emptyLabel="No LLM models"
 			/>
 
@@ -145,6 +146,8 @@ export function LlmModelsList() {
 				currentPage={currentPage}
 				pageCount={pageCount}
 				onPageChange={setCurrentPage}
+				total={total}
+				pageSize={PAGE_SIZE}
 			/>
 
 			<FormDialog

@@ -17,6 +17,18 @@ export function Layout() {
 		menuItems.find((item) => item.key === selectedKey)?.label ??
 		"Knowledge Gateway";
 
+	// Group the flat resource list into labelled sections for the sidebar.
+	const NAV_GROUPS: { title: string | null; keys: string[] }[] = [
+		{ title: null, keys: ["dashboard"] },
+		{ title: "Access", keys: ["users"] },
+		{
+			title: "Infrastructure",
+			keys: ["providers", "embedding-models", "llm-models"],
+		},
+		{ title: "Knowledge", keys: ["knowledge-bases", "documents", "search"] },
+		{ title: "Observability", keys: ["requests", "analytics"] },
+	];
+
 	return (
 		<div className="flex min-h-svh bg-muted/40">
 			<aside className="flex w-60 flex-col border-r bg-sidebar">
@@ -26,21 +38,43 @@ export function Layout() {
 					</div>
 					<span className="font-semibold">Knowledge Gateway</span>
 				</div>
-				<nav className="flex flex-1 flex-col gap-0.5 px-3">
-					{menuItems.map((item) => (
-						<NavLink
-							key={item.key}
-							to={item.route ?? "/"}
-							className={({ isActive }) =>
-								cn(
-									"rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-									isActive && "bg-accent font-medium text-foreground",
-								)
-							}
-						>
-							{item.label ?? item.name}
-						</NavLink>
-					))}
+				<nav className="flex flex-1 flex-col gap-4 px-3">
+					{NAV_GROUPS.map((group) => {
+						const items = group.keys
+							.map((key) =>
+								menuItems.find((item) => item.name === key || item.key === key),
+							)
+							.filter((item) => item !== undefined);
+						if (items.length === 0) {
+							return null;
+						}
+						return (
+							<div
+								key={group.title ?? "root"}
+								className="flex flex-col gap-0.5"
+							>
+								{group.title ? (
+									<span className="px-3 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
+										{group.title}
+									</span>
+								) : null}
+								{items.map((item) => (
+									<NavLink
+										key={item.key}
+										to={item.route ?? "/"}
+										className={({ isActive }) =>
+											cn(
+												"rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+												isActive && "bg-accent font-medium text-foreground",
+											)
+										}
+									>
+										{item.label ?? item.name}
+									</NavLink>
+								))}
+							</div>
+						);
+					})}
 				</nav>
 				<div className="border-t p-3">
 					<div className="mb-2 flex items-center gap-2 px-2">

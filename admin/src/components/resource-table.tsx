@@ -1,5 +1,7 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -8,6 +10,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 export type Column<T> = {
 	header: string;
@@ -22,9 +25,14 @@ type ResourceTableProps<T> = {
 	getRowId: (row: T) => string;
 	onEdit?: (row: T) => void;
 	onDelete?: (row: T) => void;
+	onRowClick?: (row: T) => void;
 	extraActions?: (row: T) => ReactNode;
 	emptyLabel?: string;
+	// Label used in the delete-confirmation prompt, e.g. the row's name.
+	getDeleteLabel?: (row: T) => string;
 };
+
+const SKELETON_ROWS = 5;
 
 export function ResourceTable<T>({
 	columns,
@@ -33,9 +41,12 @@ export function ResourceTable<T>({
 	getRowId,
 	onEdit,
 	onDelete,
+	onRowClick,
 	extraActions,
 	emptyLabel = "No records",
+	getDeleteLabel,
 }: ResourceTableProps<T>) {
+	const [deleting, setDeleting] = useState<T | null>(null);
 	const hasActions = Boolean(onEdit || onDelete || extraActions);
 	const colSpan = columns.length + (hasActions ? 1 : 0);
 
@@ -56,14 +67,19 @@ export function ResourceTable<T>({
 				</TableHeader>
 				<TableBody>
 					{isLoading ? (
-						<TableRow>
-							<TableCell
-								colSpan={colSpan}
-								className="text-center text-muted-foreground"
-							>
-								Loading…
-							</TableCell>
-						</TableRow>
+						Array.from({ length: SKELETON_ROWS }).map((_, rowIndex) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholder
+							<TableRow key={`skeleton-${rowIndex}`}>
+								{Array.from({ length: colSpan }).map((__, cellIndex) => (
+									<TableCell
+										// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholder
+										key={`skeleton-cell-${cellIndex}`}
+									>
+										<Skeleton className="h-4 w-full max-w-32" />
+									</TableCell>
+								))}
+							</TableRow>
+						))
 					) : rows.length === 0 ? (
 						<TableRow>
 							<TableCell
@@ -75,7 +91,11 @@ export function ResourceTable<T>({
 						</TableRow>
 					) : (
 						rows.map((row) => (
-							<TableRow key={getRowId(row)}>
+							<TableRow
+								key={getRowId(row)}
+								onClick={onRowClick ? () => onRowClick(row) : undefined}
+								className={cn(onRowClick && "cursor-pointer")}
+							>
 								{columns.map((column) => (
 									<TableCell key={column.header} className={column.className}>
 										{column.cell(row)}
@@ -83,7 +103,13 @@ export function ResourceTable<T>({
 								))}
 								{hasActions ? (
 									<TableCell className="text-right">
-										<div className="flex justify-end gap-1">
+										{/* Stop row-click from firing when interacting with actions. */}
+										{/* biome-ignore lint/a11y/noStaticElementInteractions: propagation guard, not a control */}
+										<div
+											className="flex justify-end gap-1"
+											onClick={(event) => event.stopPropagation()}
+											onKeyDown={(event) => event.stopPropagation()}
+										>
 											{extraActions?.(row)}
 											{onEdit ? (
 												<Button
@@ -98,7 +124,7 @@ export function ResourceTable<T>({
 												<Button
 													variant="ghost"
 													size="sm"
-													onClick={() => onDelete(row)}
+													onClick={() => setDeleting(row)}
 												>
 													Delete
 												</Button>
@@ -111,6 +137,28 @@ export function ResourceTable<T>({
 					)}
 				</TableBody>
 			</Table>
+
+			<ConfirmDialog
+				open={deleting !== null}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDeleting(null);
+					}
+				}}
+				title="Delete this item?"
+				description={
+					deleting && getDeleteLabel
+						? `“${getDeleteLabel(deleting)}” will be permanently deleted. This action cannot be undone.`
+						: "This item will be permanently deleted. This action cannot be undone."
+				}
+				confirmLabel="Delete"
+				onConfirm={() => {
+					if (deleting && onDelete) {
+						onDelete(deleting);
+					}
+					setDeleting(null);
+				}}
+			/>
 		</div>
 	);
 }

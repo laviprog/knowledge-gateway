@@ -133,6 +133,7 @@ export function ProvidersList() {
 				getRowId={(provider) => provider.id}
 				onEdit={openEdit}
 				onDelete={(provider) => remove({ resource: RESOURCE, id: provider.id })}
+				getDeleteLabel={(provider) => provider.public_id}
 				emptyLabel="No providers"
 			/>
 
@@ -140,6 +141,8 @@ export function ProvidersList() {
 				currentPage={currentPage}
 				pageCount={pageCount}
 				onPageChange={setCurrentPage}
+				total={total}
+				pageSize={PAGE_SIZE}
 			/>
 
 			<FormDialog
