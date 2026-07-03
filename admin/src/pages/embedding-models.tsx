@@ -159,6 +159,7 @@ export function EmbeddingModelsList() {
 				getRowId={(model) => model.id}
 				onEdit={openEdit}
 				onDelete={(model) => remove({ resource: RESOURCE, id: model.id })}
+				getDeleteLabel={(model) => model.public_id}
 				emptyLabel="No embedding models"
 			/>
 
@@ -166,6 +167,8 @@ export function EmbeddingModelsList() {
 				currentPage={currentPage}
 				pageCount={pageCount}
 				onPageChange={setCurrentPage}
+				total={total}
+				pageSize={PAGE_SIZE}
 			/>
 
 			<FormDialog

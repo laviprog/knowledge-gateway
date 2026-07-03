@@ -2,6 +2,7 @@ import type {
 	BaseRecord,
 	CreateParams,
 	CreateResponse,
+	CrudFilters,
 	DataProvider,
 	DeleteOneParams,
 	DeleteOneResponse,
@@ -20,7 +21,9 @@ import { API_URL, apiFetch } from "@/lib/api";
  * The backend paginates with `limit`/`offset` query params and returns list responses shaped as
  * `{ total, limit, offset, <items>: [...] }`, where the array key is the plural resource name
  * (e.g. `users`, `providers`). We locate that array generically rather than hardcoding per
- * resource. The list endpoints don't support arbitrary filters/sorters, so those are ignored.
+ * resource. Sorters are ignored. Simple equality filters (e.g. `knowledge_base_id` on documents)
+ * are forwarded as query params; other operators are ignored since the API only supports plain
+ * scalar query filters.
  */
 function extractList<TData>(payload: Record<string, unknown>): {
 	data: TData[];
@@ -34,12 +37,30 @@ function extractList<TData>(payload: Record<string, unknown>): {
 	return { data, total };
 }
 
+function applyFilters(params: URLSearchParams, filters?: CrudFilters): void {
+	if (!filters) {
+		return;
+	}
+	for (const filter of filters) {
+		// Only "field" (logical) filters with an eq operator map to a query param.
+		if (!("field" in filter) || filter.operator !== "eq") {
+			continue;
+		}
+		const { field, value } = filter;
+		if (value == null || value === "") {
+			continue;
+		}
+		params.set(field, String(value));
+	}
+}
+
 export const dataProvider: DataProvider = {
 	getApiUrl: () => API_URL,
 
 	getList: async <TData extends BaseRecord = BaseRecord>({
 		resource,
 		pagination,
+		filters,
 	}: GetListParams): Promise<GetListResponse<TData>> => {
 		const pageSize = pagination?.pageSize ?? 10;
 		const currentPage = pagination?.currentPage ?? 1;
@@ -49,6 +70,7 @@ export const dataProvider: DataProvider = {
 			params.set("limit", String(pageSize));
 			params.set("offset", String((currentPage - 1) * pageSize));
 		}
+		applyFilters(params, filters);
 
 		const query = params.toString();
 		const payload = await apiFetch<Record<string, unknown>>(
