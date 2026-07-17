@@ -5,9 +5,9 @@ description = "FastAPI service for OpenAI-compatible RAG chat completions."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "advanced-alchemy==1.9.3",
-    "pydantic-settings>=2.14.1",
-    "structlog>=25.5.0",
+    "advanced-alchemy==1.11.0",
+    "pydantic-settings>=2.14.2",
+    "structlog>=26.1.0",
     "cryptography>=49.0.0",
     "argon2-cffi>=25.1.0"
 ]
@@ -15,27 +15,27 @@ dependencies = [
 [dependency-groups]
 api = [
     "asyncpg>=0.31.0",
-    "fastapi>=0.136.1",
+    "fastapi>=0.139.2",
     "markitdown[docx,pdf]>=0.1.6",
-    "openai>=1.59.0",
+    "openai>=2.46.0",
     "prometheus-fastapi-instrumentator>=8.0.2",
-    "python-multipart>=0.0.29",
+    "python-multipart>=0.0.32",
     "qdrant-client>=1.18.0",
     "redis>=8.0.1",
     "scalar-fastapi>=1.8.2",
-    "uvicorn[standard]>=0.47.0",
+    "uvicorn[standard]>=0.51.0",
 ]
 migrate = [
-    "alembic>=1.18.4",
+    "alembic>=1.18.5",
     "psycopg2-binary>=2.9.12",
 ]
 dev = [
     "httpx>=0.28.1",
     "pre-commit>=4.6.0",
-    "pytest>=9.0.3",
+    "pytest>=9.1.1",
     "pytest-cov>=7.0.0",
-    "ruff>=0.15.12",
-    "ty>=0.0.55",
+    "ruff>=0.15.22",
+    "ty>=0.0.60",
 ]
 
 [tool.uv]
